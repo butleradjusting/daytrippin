@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en" data-look="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daytrippin'</title>
+<script>try { var look = localStorage.getItem('daytrippin.look'); if (look === 'day' || look === 'night') document.documentElement.dataset.look = look; } catch (e) {}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=B612:ital,wght@0,400;0,700;1,400&family=Shrikhand&display=swap" rel="stylesheet">
+<style>
+  /* Daytrippin': a jet-age route map in screenprint inks.
+     Layout: one turquoise sky edge to edge, paper tickets laid on it, the map is the
+     loud thing. Left-aligned. Phone first; from 62rem the map stands beside the list.
+     Grapefruit means one thing everywhere: hours in town. */
+  :root {
+    --sky: #5fd0cf;         /* pool turquoise: the page and the sea */
+    --ink: #0e2a4d;         /* Atlantic navy: type, routes, time in the air */
+    --paper: #fffdf8;       /* tickets and land */
+    --grapefruit: #d92f4b;  /* hours in town, nothing else */
+    --sun: #ffc93c;         /* home, the chosen day, a bargain, the one primary action */
+    --glass: #bfe3dd;       /* time on the ground: drives and waits */
+    --slate: #4c607a;       /* quiet type on paper */
+    --ink-2: #1d4a6e;       /* quiet type on sky */
+    --track: #e9f1ee;
+    --shade: #0e2a4d;
+    --shade-soft: rgba(14, 42, 77, .3);
+    --night: #0e2a4d;
+    --dawn: #ff9a55;
+    --day: #ffe17a;
+    --on-sun: #0e2a4d;
+    --mark: #0e2a4d;
+    --mark-shade: #ffc93c;
+    --display: 'Shrikhand', 'Cooper Black', 'Bookman Old Style', Georgia, serif;
+    --body: 'B612', Verdana, 'DejaVu Sans', sans-serif;
+    --gutter: 1.15rem;
+    color-scheme: light;
+  }
+  /* Night flight, the look the page opens in: the same poster after dark.
+     The Night / Day switch beside Options sets data-look and remembers it. */
+  :root[data-look="night"] {
+    --sky: #0b1b36; --ink: #f1f4e8; --paper: #17305a; --grapefruit: #ff7385;
+    --sun: #ffd257; --glass: #3f6f7c; --slate: #aebed3; --ink-2: #b4c4d8;
+    --track: #0f2344; --shade: #03080f; --shade-soft: rgba(0, 0, 0, .45);
+    --night: #040a16; --dawn: #ff9050; --day: #ffd257; --mark: #ffd257; --mark-shade: #d92f4b;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--sky);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  a { color: inherit; text-underline-offset: .2em; text-decoration-thickness: 2px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---------- Page frame ---------- */
+  .page { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .intro, .results, .chart-note { width: 100%; max-width: 40rem; margin-inline: auto; }
+  .intro { padding: 1.15rem var(--gutter) 1.1rem; }
+  .results { padding: 1.4rem var(--gutter) 3rem; }
+  .map-box { position: relative; aspect-ratio: 1 / 1.02; max-height: 31rem; width: 100%; overflow: hidden; }
+  .chart-note { margin-block: 0; padding: .35rem var(--gutter) 0; font-size: .8125rem; color: var(--ink-2); }
+
+  @media (min-width: 62rem) {
+    .page {
+      max-width: none;
+      grid-template-columns: minmax(0, 54fr) minmax(0, 46fr);
+      grid-template-areas: "intro chart" "results chart";
+      grid-template-rows: auto 1fr;
+    }
+    .intro, .results { max-width: 47rem; }
+    .intro { grid-area: intro; padding: 2.2rem 2rem 1rem 3rem; }
+    .results { grid-area: results; padding: 1.2rem 2rem 4rem 3rem; }
+    .chart { grid-area: chart; }
+    .chart-stick { position: sticky; top: 0; height: 100vh; height: 100dvh; max-height: 62rem; display: flex; flex-direction: column; }
+    .map-box { flex: 1; min-height: 0; aspect-ratio: auto; max-height: none; }
+    .chart-note { max-width: none; margin-inline: 0; padding: .5rem 1.5rem 1rem; }
+  }
+
+  /* ---------- Masthead ---------- */
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .mark {
+    margin: 0; font-family: var(--display); font-size: 1.75rem; line-height: 1;
+    color: var(--mark); transform: rotate(-3deg); transform-origin: left bottom;
+    text-shadow: 2px 2px 0 var(--mark-shade);
+  }
+  .mark span { display: inline-block; }
+  .home, .spot { margin: 0; font-size: .9375rem; color: var(--ink-2); }
+  .spot {
+    display: inline-flex; align-items: center; gap: .55rem; margin-top: .35rem;
+    padding: .35rem .7rem .35rem .45rem; border: 1.5px solid var(--ink); border-radius: 999px;
+    background: var(--paper); color: var(--ink); box-shadow: 0 3px 0 var(--shade);
+    font: inherit; cursor: pointer; text-align: left;
+  }
+  .spot svg { width: 1.35rem; height: 1.35rem; flex: none; }
+  .spot b { display: block; font-size: .95rem; letter-spacing: -.02em; }
+  .spot small { display: block; color: var(--ink-2); font-size: .72rem; letter-spacing: .04em; }
+
+  h1 {
+    margin: 1.7rem 0 0; max-width: 15em;
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(2.1rem, 8.7vw, 3.4rem); line-height: 1.05; letter-spacing: -.005em;
+    text-wrap: balance;
+  }
+
+  /* ---------- Day picker: pages off a tear-off calendar ---------- */
+  .days { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; margin-top: 1.5rem; max-width: 26rem; }
+  .day {
+    appearance: none; border: 0; padding: 0; overflow: hidden;
+    background: var(--paper); color: var(--ink); border-radius: .6rem;
+    font: inherit; text-align: center; cursor: pointer;
+    box-shadow: 0 3px 0 var(--shade);
+    transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+  }
+  .day .mon { display: block; padding: .18rem 0; background: var(--ink); color: var(--paper); font-size: .8125rem; font-weight: 700; letter-spacing: .03em; }
+  .day .num { display: block; padding: .5rem 0 .05rem; font-family: var(--display); font-size: 2.5rem; line-height: 1; }
+  .day .lab { display: block; padding: 0 .2rem .6rem; font-size: .875rem; font-weight: 700; }
+  .day:hover { transform: translateY(-2px); box-shadow: 0 5px 0 var(--shade); }
+  .day[aria-pressed="true"] { background: var(--sun); color: var(--on-sun); transform: translateY(-3px) rotate(-2deg); box-shadow: 0 6px 0 var(--shade); }
+  .day[aria-pressed="true"] .mon { background: var(--on-sun); color: var(--sun); }
+
+  .other { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1rem; font-size: .9375rem; font-weight: 700; }
+  .other input, .money input {
+    font: inherit; font-weight: 400; color: var(--ink); background: var(--paper);
+    border: 2px solid var(--ink); border-radius: .5rem; padding: .3rem .55rem; min-height: 2.5rem;
+  }
+  .other input.on { background: var(--sun); color: var(--on-sun); border-color: var(--on-sun); color-scheme: light; }
+
+  /* ---------- Options ---------- */
+  .hunt {
+    display: inline-flex; align-items: center; gap: .55rem; margin-top: 0; padding: .5rem 1rem;
+    background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px;
+    box-shadow: 0 3px 0 var(--shade); font: inherit; font-size: .9375rem; font-weight: 700; text-align: left; cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+  }
+  .hunt svg { flex: none; width: 1.3rem; height: .91rem; fill: currentColor; }
+  .hunt:hover { transform: translateY(-1px); box-shadow: 0 4px 0 var(--shade); }
+  .hunt[aria-pressed="true"] { background: var(--sun); color: var(--on-sun); border-color: var(--on-sun); transform: translateY(-2px) rotate(-1deg); box-shadow: 0 5px 0 var(--shade); }
+  .tools { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-top: 1rem; }
+  .who { display: flex; gap: .35rem; }
+  .who button { min-height: 2.75rem; padding: .4rem .85rem; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; font: inherit; font-size: .9375rem; font-weight: 700; cursor: pointer; }
+  .who button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .look { position: absolute; top: 0; right: 0; display: flex; gap: .3rem; }
+  .look button { padding: .24rem .65rem; background: transparent; color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; font: inherit; font-size: .8125rem; cursor: pointer; }
+  .look button[aria-pressed="true"] { background: var(--ink); color: var(--sky); font-weight: 700; }
+  .options { margin-top: .9rem; }
+  .options summary { cursor: pointer; width: fit-content; font-size: .9375rem; font-weight: 700; padding: .25rem 0; }
+  .sheet { display: grid; gap: 1.05rem; margin-top: .6rem; padding: 1.05rem 1.15rem 1.15rem; background: var(--paper); border-radius: .9rem; box-shadow: 0 4px 0 var(--shade-soft); }
+  .sheet fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+  .sheet legend { padding: 0; margin-bottom: .45rem; font-size: .9375rem; font-weight: 700; }
+  .seg { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .seg.col { flex-direction: column; align-items: flex-start; }
+  .seg label { position: relative; cursor: pointer; }
+  .seg input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .seg span { display: block; padding: .38rem .8rem; border: 2px solid var(--ink); border-radius: 999px; font-size: .9375rem; }
+  .seg input:checked + span { background: var(--ink); color: var(--paper); font-weight: 700; }
+  .seg input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .money { display: flex; align-items: center; gap: .45rem; }
+  .money input { width: 7.5rem; }
+  .check { display: flex; align-items: center; gap: .55rem; font-size: .9375rem; cursor: pointer; }
+  .check input { width: 1.2rem; height: 1.2rem; margin: 0; accent-color: var(--grapefruit); }
+
+  /* ---------- Map ---------- */
+  #map { display: block; width: 100%; height: 100%; }
+  .m-grat { fill: none; stroke: var(--paper); stroke-opacity: .3; stroke-width: 1; }
+  .m-far { fill: var(--paper); fill-opacity: .4; }
+  .m-land { fill: var(--paper); }
+  .m-borders { fill: none; stroke: var(--sky); stroke-width: 1; stroke-linejoin: round; }
+  .m-arc { fill: none; stroke: var(--ink); stroke-width: 2.25; stroke-linecap: round; }
+  .m-arc.hot { stroke-width: 4; }
+  .m-arc.hid { stroke-opacity: .45; stroke-width: 1.75; stroke-dasharray: 1.5 6; }
+  .m-ap { fill: var(--ink); }
+  .m-dot { fill: var(--grapefruit); stroke: var(--paper); stroke-width: 2; cursor: pointer; }
+  .m-dot.hot { stroke: var(--sun); stroke-width: 4; }
+  .m-dot.hid { fill: var(--paper); stroke: var(--ink); stroke-opacity: .55; stroke-width: 1.5; cursor: default; }
+  .m-sun { fill: var(--sun); stroke: var(--on-sun); stroke-width: 1.5; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; animation: spin 90s linear infinite; }
+  .m-home { font-family: var(--display); font-size: 15px; fill: var(--ink); paint-order: stroke; stroke: var(--sky); stroke-width: 4px; stroke-linejoin: round; }
+  .m-tag { cursor: pointer; }
+  .m-tag rect { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+  .m-tag text { font-family: var(--body); font-size: 12.5px; font-weight: 700; fill: var(--ink); }
+  .m-tag .hrs { fill: var(--grapefruit); }
+  .m-tag.hot rect { fill: var(--sun); stroke: var(--on-sun); }
+  .m-tag.hot text, .m-tag.hot .hrs { fill: var(--on-sun); }
+  .m-plane { fill: var(--ink); stroke: var(--paper); stroke-width: 1; stroke-linejoin: round; pointer-events: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Results header ---------- */
+  .sample { margin: 0 0 1.2rem; padding: .7rem .95rem; background: var(--sun); color: var(--on-sun); border: 2px dashed var(--on-sun); border-radius: .6rem; font-size: .9375rem; }
+  .status { margin: 0; font-size: 1.0625rem; font-weight: 700; text-wrap: pretty; }
+  .status.problem { padding: .9rem 1rem; background: var(--paper); border-radius: .8rem; font-weight: 400; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1rem; margin-top: .9rem; }
+  .sort { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .sort button { padding: .36rem .7rem; background: transparent; color: var(--ink); border: 2px solid var(--ink); border-radius: 999px; font: inherit; font-size: .875rem; cursor: pointer; }
+  .sort button[aria-pressed="true"] { background: var(--ink); color: var(--sky); font-weight: 700; }
+  .pick {
+    padding: .5rem 1.05rem; background: var(--sun); color: var(--on-sun);
+    border: 2px solid var(--on-sun); border-radius: 999px; box-shadow: 0 4px 0 var(--shade);
+    font: inherit; font-weight: 700; cursor: pointer; transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .pick:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--shade); }
+  .pick:active { transform: translateY(4px); box-shadow: 0 0 0 var(--shade); }
+  .legend { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 1rem 0 0; font-size: .8125rem; color: var(--ink-2); }
+  .legend i { display: inline-block; width: 1rem; height: .62rem; margin-right: .4rem; border-radius: 2px; box-shadow: 0 0 0 1.5px var(--ink); }
+  .legend .k-ground { background: var(--glass); }
+  .legend .k-air { background: var(--ink); }
+  .legend .k-town { background: var(--grapefruit); }
+  .legend .k-day { background: linear-gradient(90deg, var(--night) 0 22%, var(--dawn) 36%, var(--day) 52% 100%); }
+
+  /* ---------- Tickets ---------- */
+  .trips { container-type: inline-size; display: grid; gap: 1.5rem; margin: 1.15rem 0 0; padding: 0; list-style: none; transition: opacity .2s ease; }
+  .results[aria-busy="true"] .trips { opacity: .45; }
+  .ticket { filter: drop-shadow(0 5px 0 var(--shade-soft)); }
+  .t-in { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .t-head, .t-body { --r: .7rem; background: var(--paper); transition: background-color .12s ease; }
+  .t-head {
+    padding: 1.1rem 1.25rem 1.25rem; border-radius: 1rem 1rem 0 0;
+    -webkit-mask: radial-gradient(circle var(--r) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--r) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+            mask: radial-gradient(circle var(--r) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--r) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+  }
+  .t-body {
+    padding: 1.2rem 1.25rem 1.2rem; border-radius: 0 0 1rem 1rem; border-top: 3px dotted var(--sky);
+    -webkit-mask: radial-gradient(circle var(--r) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--r) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+            mask: radial-gradient(circle var(--r) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat, radial-gradient(circle var(--r) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+  }
+  .ticket.is-rolling .t-head, .ticket.is-rolling .t-body { background: var(--sun); color: var(--on-sun); }
+  .ticket.is-rolling :is(.t-via, .fig span, .codes, .ticks, .aside, .legs small) { color: var(--on-sun); }
+
+  .t-route { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .75rem; }
+  .pills { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+  /* A price tag, hole and all, for round trips under the bargain line. */
+  .deal {
+    padding: .16rem .6rem .16rem 1.2rem; white-space: nowrap;
+    background: radial-gradient(circle at .68rem 50%, var(--paper) .15rem, #0000 .19rem), var(--sun);
+    color: var(--on-sun); font-size: .8125rem; font-weight: 700;
+    clip-path: polygon(.62rem 0, 100% 0, 100% 100%, .62rem 100%, 0 50%); transform: rotate(-2deg);
+  }
+  .codes { display: inline-flex; align-items: center; gap: .45rem; font-size: .875rem; font-weight: 700; letter-spacing: .08em; color: var(--slate); }
+  .codes svg { width: 1.05rem; height: .86rem; fill: currentColor; }
+  .size { padding: .12rem .6rem; border: 2px solid var(--grapefruit); border-radius: 999px; color: var(--grapefruit); font-size: .8125rem; font-weight: 700; white-space: nowrap; transform: rotate(2deg); }
+  .size.full { background: var(--grapefruit); color: var(--paper); }
+  .size.lunch { border-style: dashed; }
+  .t-city { margin: .55rem 0 0; font-family: var(--display); font-weight: 400; font-size: 2.15rem; line-height: 1.05; overflow-wrap: anywhere; }
+  .t-city span { display: inline-block; }
+  .t-via { margin: .25rem 0 0; font-size: .9375rem; color: var(--slate); }
+  .figs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: .9rem 1rem; margin-top: 1rem; }
+  .fig { margin: 0; }
+  .fig b { display: block; font-family: var(--display); font-weight: 400; font-size: min(2.55rem, 10.4cqi); line-height: 1; white-space: nowrap; }
+  .fig span { display: block; margin-top: .3rem; font-size: .8125rem; color: var(--slate); }
+  .fig.hours b { color: var(--grapefruit); }
+  .rate { margin: .9rem 0 0; font-size: .9375rem; font-weight: 700; }
+
+  .strip { position: relative; height: 2rem; }
+  .band { position: absolute; left: 0; right: 0; top: 0; height: .45rem; border-radius: .25rem; }
+  .segs { position: absolute; left: 0; right: 0; bottom: 0; height: 1.05rem; background: var(--track); border-radius: .3rem; overflow: hidden; }
+  .strip.plain .segs { height: 1.05rem; top: .45rem; bottom: auto; }
+  .segs i { position: absolute; top: 0; bottom: 0; }
+  .segs .ground { background: var(--glass); }
+  .segs .air { background: var(--ink); }
+  .segs .town { background: var(--grapefruit); }
+  .ticks { position: relative; height: 1.35rem; font-size: .75rem; color: var(--slate); }
+  .ticks span { position: absolute; top: .3rem; transform: translateX(-50%); white-space: nowrap; }
+  .ticks span.first { transform: none; }
+  .ticks span.last { transform: translateX(-100%); }
+
+  .legs { display: grid; gap: .32rem; margin: .95rem 0 0; padding: 0; list-style: none; font-size: .9375rem; }
+  .legs li { display: grid; grid-template-columns: 4.55rem minmax(0, 1fr); gap: .7rem; align-items: baseline; text-wrap: pretty; }
+  .legs .at { font-weight: 700; text-align: right; white-space: nowrap; }
+  .legs .town-row { color: var(--grapefruit); font-weight: 700; }
+  .legs .town-row small { display: block; font-size: .8125rem; font-weight: 400; color: var(--slate); }
+  .aside { margin: .7rem 0 0; font-size: .875rem; color: var(--slate); }
+  .t-foot { margin-top: 1.05rem; display: flex; flex-wrap: wrap; gap: .55rem .7rem; align-items: center; }
+  .go { display: inline-block; padding: .5rem 1rem; background: var(--sun); color: var(--on-sun); border-radius: 999px; font-size: .9375rem; font-weight: 700; text-decoration: none; }
+  .fill { display: inline-block; padding: .45rem .9rem; border: 1.5px solid var(--ink); border-radius: 999px; color: var(--ink); font-size: .9375rem; font-weight: 700; text-decoration: none; }
+  .go:hover, .fill:hover { text-decoration: underline; }
+  .go:active, .fill:active { transform: translateY(1px); }
+
+  @container (min-width: 37rem) {
+    .t-in { grid-template-columns: 15.5rem minmax(0, 1fr); }
+    .t-head {
+      border-radius: 1rem 0 0 1rem; padding: 1.2rem 1.2rem 1.3rem 1.35rem;
+      -webkit-mask: radial-gradient(circle var(--r) at 100% 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle var(--r) at 100% 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+              mask: radial-gradient(circle var(--r) at 100% 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle var(--r) at 100% 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+    }
+    .t-body {
+      border-radius: 0 1rem 1rem 0; border-top: 0; border-left: 3px dotted var(--sky); padding: 1.3rem 1.35rem 1.25rem 1.3rem;
+      -webkit-mask: radial-gradient(circle var(--r) at 0 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle var(--r) at 0 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+              mask: radial-gradient(circle var(--r) at 0 0, #0000 97%, #000) top / 100% 51% no-repeat, radial-gradient(circle var(--r) at 0 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+    }
+    .t-route { flex-direction: row; }
+    .figs { grid-template-columns: minmax(0, 1fr); }
+    .fig b { font-size: 2.55rem; }
+  }
+
+  /* ---------- After the list ---------- */
+  .hidden-list { margin-top: 1.6rem; font-size: .9375rem; }
+  .hidden-list summary { cursor: pointer; width: fit-content; font-weight: 700; }
+  .hidden-list ul { margin: .5rem 0 0; padding-left: 1.15rem; color: var(--ink-2); }
+  .fine { margin: 1.8rem 0 0; max-width: 62ch; font-size: .875rem; color: var(--ink-2); }
+  .credits { margin: 1.4rem 0 0; padding-top: 1.1rem; border-top: 2px solid var(--ink); max-width: 62ch; font-size: .8125rem; color: var(--ink-2); }
+  #confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="intro">
+    <header class="top">
+      <p class="mark" id="mark">Daytrippin’</p>
+      <button class="spot" id="home" type="button" aria-label="Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.2a7 7 0 0 0-7 7c0 5.1 6.1 11.8 6.4 12.1a.9.9 0 0 0 1.2 0C12.9 21 19 14.3 19 9.2a7 7 0 0 0-7-7Zm0 9.4a2.4 2.4 0 1 1 0-4.8 2.4 2.4 0 0 1 0 4.8Z"/></svg>
+        <span><b id="spotName">Vero Beach</b></span>
+      </button>
+    </header>
+
+    <h1 id="question">Where could you fly tomorrow and still sleep in your own bed?</h1>
+
+    <div class="days" id="days" role="group" aria-label="Pick a day"></div>
+    <label class="other" for="otherDay">Another day <input type="date" id="otherDay"></label>
+    <button class="hunt" id="hunt" type="button" aria-pressed="false" hidden>
+      <svg viewBox="0 0 20 14" aria-hidden="true"><path fill-rule="evenodd" d="M6,0H19a1,1,0,0,1,1,1V13a1,1,0,0,1-1,1H6L0,7Z M6.6,5.3a1.7,1.7,0,1,0,0,3.4a1.7,1.7,0,1,0,0-3.4Z"/></svg>
+      <span id="huntLabel">Bargain hunt</span>
+    </button>
+
+    <div class="tools">
+    <div class="who" id="who" role="group" aria-label="Passengers"></div>
+    <details class="options">
+      <summary>Options</summary>
+      <div class="sheet">
+        <fieldset>
+          <legend>Longest drive to an airport</legend>
+          <div class="seg col" id="drive"></div>
+        </fieldset>
+        <fieldset>
+          <legend>At the airport before each flight</legend>
+          <div class="seg" id="buffer"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Home by</legend>
+          <div class="seg" id="homeBy"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Budget for both flights</legend>
+          <label class="money" for="maxPrice">$ <input type="number" id="maxPrice" min="0" step="10" inputmode="numeric" placeholder="No limit" aria-label="Budget in dollars"></label>
+        </fieldset>
+        <label class="check" for="short"><input type="checkbox" id="short">Show trips with under 3 hours in town</label>
+      </div>
+    </details>
+    <div class="look" id="look" role="group" aria-label="Colors">
+      <button type="button" data-look="night" aria-pressed="true">Night</button>
+      <button type="button" data-look="day" aria-pressed="false">Day</button>
+    </div>
+    </div>
+  </section>
+
+  <aside class="chart" id="chart" aria-label="Route map">
+    <div class="chart-stick">
+      <div class="map-box" id="mapBox"><svg id="map" role="img" aria-label="Map of the day's routes from home"></svg></div>
+      <p class="chart-note" id="mapNote">Bigger dot, more hours in town. Dotted routes didn’t pass the test.</p>
+    </div>
+  </aside>
+
+  <section class="results" id="results" aria-busy="false">
+    <p class="sample" id="sample" hidden></p>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <p class="sr" id="announce" role="status" aria-live="polite"></p>
+
+    <div id="bar" hidden>
+      <div class="bar">
+        <div class="sort" id="sort" role="group" aria-label="Sort by"></div>
+        <button class="pick" id="pick" type="button" hidden>Pick one for me</button>
+      </div>
+      <p class="legend" aria-hidden="true">
+        <span><i class="k-ground"></i>Getting there and back</span>
+        <span><i class="k-air"></i>In the air</span>
+        <span><i class="k-town"></i>In town</span>
+        <span id="dayKey" hidden><i class="k-day"></i>Night and daylight</span>
+      </p>
+    </div>
+
+    <ol class="trips" id="trips"></ol>
+
+    <details class="hidden-list" id="hiddenBox" hidden>
+      <summary id="hiddenSummary"></summary>
+      <ul id="hiddenList"></ul>
+    </details>
+
+    <p class="fine" id="fine"></p>
+    <p class="credits">
+      Drawn with open-source tools:
+      <a href="https://github.com/juliangarnier/anime">anime.js</a> moves things,
+      <a href="https://github.com/d3/d3-geo">D3</a> and
+      <a href="https://github.com/topojson/topojson-client">TopoJSON</a> draw the map from
+      <a href="https://github.com/topojson/us-atlas">US Atlas</a> and
+      <a href="https://github.com/topojson/world-atlas">World Atlas</a> shapes,
+      <a href="https://github.com/mourner/suncalc">SunCalc</a> works out sunrise and sunset,
+      <a href="https://github.com/rough-stuff/rough-notation">Rough Notation</a> circles the pick, and
+      <a href="https://github.com/catdad/canvas-confetti">canvas-confetti</a> celebrates it.
+      The type is <a href="https://fonts.google.com/specimen/Shrikhand">Shrikhand</a> and
+      <a href="https://fonts.google.com/specimen/B612">B612</a>, the face Airbus commissioned for cockpit screens.
+    </p>
+  </section>
+</main>
+<canvas id="confetti" aria-hidden="true"></canvas>
+<noscript><p style="padding:1rem">Daytrippin' needs JavaScript to look up flights.</p></noscript>
+
+<script type="application/json" id="mapdata">{"states":{"type":"Topology","bbox":[-179.14733999999999,-14.552548999999999,179.77847,71.352561],"transform":{"scale":[0.0358961706170617,0.0085913701370137],"translate":[-179.14733999999999,-14.552548999999999]},"objects":{"states":{"type":"GeometryCollection","geometries":[{"type":"MultiPolygon","arcs":[[[0,1,2,3,4]]],"id":"01"},{"type":"Polygon","arcs":[[5,6,7,8,9]],"id":"04"},{"type":"Polygon","arcs":[[10,11,12,13,14,15]],"id":"08"},{"type":"MultiPolygon","arcs":[[[16]],[[17,18,-3]]],"id":"12"},{"type":"Polygon","arcs":[[19,20,21,22,-18,-2]],"id":"13"},{"type":"Polygon","arcs":[[23,24,25,26,27]],"id":"18"},{"type":"Polygon","arcs":[[28,29,30,-13]],"id":"20"},{"type":"MultiPolygon","arcs":[[[31,32]]],"id":"23"},{"type":"MultiPolygon","arcs":[[[33]],[[34,35,36,37,38,39,40,41]]],"id":"25"},{"type":"Polygon","arcs":[[42,43,44,45,46]],"id":"27"},{"type":"Polygon","arcs":[[47,48,49,50,51,52,53,54]],"id":"34"},{"type":"MultiPolygon","arcs":[[[55,56,57,-21,58]]],"id":"37"},{"type":"Polygon","arcs":[[59,-47,60,61]],"id":"38"},{"type":"Polygon","arcs":[[-14,-31,62,63,64,65]],"id":"40"},{"type":"Polygon","arcs":[[66,67,-50,68,69,70,71]],"id":"42"},{"type":"Polygon","arcs":[[72,-61,-46,73,74,75]],"id":"46"},{"type":"Polygon","arcs":[[-65,76,77,78,79,80,81]],"id":"48"},{"type":"Polygon","arcs":[[-76,82,-11,83,84,85]],"id":"56"},{"type":"Polygon","arcs":[[-41,86,87,88]],"id":"09"},{"type":"Polygon","arcs":[[89,90,91,92,93,94,95,-63,-30,96]],"id":"29"},{"type":"Polygon","arcs":[[97,-71,98,99,100]],"id":"54"},{"type":"Polygon","arcs":[[101,102,103,-28,104,-91]],"id":"17"},{"type":"Polygon","arcs":[[-15,-66,-82,105,-9]],"id":"35"},{"type":"Polygon","arcs":[[-96,106,107,108,-79,77,-77,-64]],"id":"05"},{"type":"MultiPolygon","arcs":[[[109,110,111,-6,112]]],"id":"06"},{"type":"MultiPolygon","arcs":[[[-69,-49,113,114]]],"id":"10"},{"type":"Polygon","arcs":[[-45,117,-102,-90,118,-74]],"id":"19"},{"type":"MultiPolygon","arcs":[[[-105,-27,119,-101,120,121,-92]]],"id":"21"},{"type":"MultiPolygon","arcs":[[[-70,-115,123,124,125,126,-116,127,-99]]],"id":"24"},{"type":"MultiPolygon","arcs":[[[128,129,-25]],[[130]],[[131,132,133,134,135,136]]],"id":"26"},{"type":"MultiPolygon","arcs":[[[-108,137,-5,138,139]]],"id":"28"},{"type":"Polygon","arcs":[[140,-62,-73,-86,141]],"id":"30"},{"type":"Polygon","arcs":[[142,-32,143,-36,144]],"id":"33"},{"type":"MultiPolygon","arcs":[[[145,146,-42,-89,147,-51,-68]]],"id":"36"},{"type":"MultiPolygon","arcs":[[[-130,148,-72,-98,-120,-26]]],"id":"39"},{"type":"Polygon","arcs":[[149,150,151,110,-111,-110,152]],"id":"41"},{"type":"Polygon","arcs":[[-95,-123,-93,-122,153,-59,-20,-1,-138,-107]],"id":"47"},{"type":"Polygon","arcs":[[154,-84,-16,-8,155]],"id":"49"},{"type":"MultiPolygon","arcs":[[[-125,156]],[[-100,-128,-117,-127,157,-56,-154,-121]]],"id":"51"},{"type":"MultiPolygon","arcs":[[[158]],[[159]],[[160,-150,161]]],"id":"53"},{"type":"MultiPolygon","arcs":[[[162,-137,135,-135,133,-133,163,-103,-118,-44]]],"id":"55"},{"type":"Polygon","arcs":[[-75,-119,-97,-29,-12,-83]],"id":"31"},{"type":"Polygon","arcs":[[-58,164,-22]],"id":"45"},{"type":"Polygon","arcs":[[-161,165,-142,-85,-155,166,-151]],"id":"16"},{"type":"Polygon","arcs":[[-111,-152,-167,-156,-7,-112]],"id":"32"},{"type":"Polygon","arcs":[[167,-145,-35,-147]],"id":"50"},{"type":"MultiPolygon","arcs":[[[-109,-140,168,-80]]],"id":"22"},{"type":"MultiPolygon","arcs":[[[-38,169]],[[-87,-40,170]]],"id":"44"}]}},"arcs":[[[2534,5767],[72,-1]],[[2606,5766],[12,-246],[8,-71],[-5,-15],[-2,-34],[2,-38],[-1,-38],[3,-22]],[[2623,5302],[-73,0],[-1,-15],[7,-23],[1,-27],[-4,-19]],[[2553,5218],[-7,-2],[-7,49],[-4,-42],[-7,6]],[[2528,5229],[-2,177],[10,349],[-2,12]],[[1795,5502],[5,5],[0,31],[-5,8],[0,36],[6,34],[2,45],[8,21],[-6,22],[-8,64]],[[1797,5768],[-3,127],[11,6],[6,-14],[3,20],[-1,94]],[[1813,6001],[140,-1]],[[1953,6000],[0,-659]],[[1953,5341],[-57,0],[-104,135],[3,26]],[[1953,6466],[139,0]],[[2092,6466],[56,0],[0,-116]],[[2148,6350],[0,-350]],[[2148,6000],[-27,1]],[[2121,6001],[-107,-1],[-61,0]],[[1953,6000],[0,466]],[[2712,4554],[10,28],[5,-16],[-15,-12]],[[2623,5302],[4,-33],[73,-17],[5,-23],[3,53],[14,-14]],[[2722,5268],[5,-104],[9,-82],[10,-61],[0,-57],[13,-125],[2,-50],[-3,-103],[-3,2],[-5,-62],[-18,-8],[-6,66],[-11,19],[-5,61],[-11,45],[-12,85],[8,40],[-8,22],[3,-24],[-7,5],[-1,41],[6,26],[-1,54],[-3,28],[-5,4],[-12,40],[-6,42],[-11,26],[-7,-1],[-2,-23],[-5,1],[-15,-37],[-8,8],[0,28],[-16,39],[-20,19],[-24,-14]],[[2606,5766],[36,0]],[[2642,5766],[33,2]],[[2675,5768],[-6,-37],[13,-24],[9,-62],[18,-59],[4,-35],[8,-15],[2,-45],[3,-8],[5,-51],[6,-9]],[[2737,5423],[-6,-37],[-5,-60],[-3,-8],[-1,-50]],[[2552,6549],[9,-10],[11,16]],[[2572,6555],[56,0],[0,-8]],[[2628,6547],[0,-301]],[[2628,6246],[0,-37],[-18,-10],[1,-19],[-11,-31],[-3,-29],[-10,4],[-6,-15],[-8,7],[-10,-24],[-13,22],[-12,-20]],[[2538,6094],[-2,11],[17,98],[-4,50],[3,21],[0,275]],[[2148,6350],[188,0]],[[2336,6350],[12,-20],[-7,-35],[8,-36],[6,-12],[0,-247]],[[2355,6000],[-156,1],[-51,-1]],[[3021,6706],[-8,37],[1,22],[-4,202]],[[3010,6967],[7,-9],[4,34],[12,43],[2,52],[6,42],[21,89],[5,-4],[4,-29],[19,21],[12,-34],[0,-161],[10,-9],[-1,-38],[9,-14],[5,-40],[-9,-12],[-8,-31],[-5,12],[-8,-25],[-13,-8],[-2,-29],[-7,35],[1,22],[-12,-69],[-19,-15],[-12,-29],[-10,-55]],[[3017,6507],[7,15],[4,-15],[-11,0]],[[2950,6669],[22,-2]],[[2972,6667],[33,-3],[13,20]],[[3018,6684],[6,-25],[-11,-29],[10,-37],[3,-32],[7,-12],[8,11],[2,-13],[-21,-18],[1,20],[-14,-25]],[[3009,6524],[-2,21]],[[3007,6545],[0,4]],[[3007,6549],[-5,36],[-11,-2]],[[2991,6583],[-47,5]],[[2944,6588],[6,81]],[[2282,7397],[58,0],[0,45],[9,-10],[5,-65],[23,-13],[1,-13],[12,13],[10,-1],[14,-20],[3,-26],[3,15],[16,-18],[4,-18],[9,5],[10,18],[3,-17],[18,2],[7,-15],[8,1],[-11,-19],[-16,-15],[-16,-35],[-10,-32],[-17,-39],[2,-10]],[[2427,7130],[-7,-5],[0,-68],[-12,-22],[-5,-36],[7,-16],[-3,-17],[-2,-61],[8,-24],[17,-27],[1,-15],[12,-24],[5,-19],[2,-39]],[[2450,6757],[-146,0]],[[2304,6757],[0,210],[-12,35],[9,39]],[[2301,7041],[-1,46],[-6,38],[-2,111],[-7,61],[1,64],[-4,36]],[[2886,6307],[1,6]],[[2887,6313],[3,14]],[[2890,6327],[19,41],[-9,30],[-4,32],[2,33],[12,45]],[[2910,6508],[22,-42],[-4,-36]],[[2928,6430],[-1,-3]],[[2927,6427],[-5,-19]],[[2922,6408],[8,-15],[-3,-71],[-7,-38],[-18,-58],[3,26],[-19,35],[0,17]],[[2886,6304],[0,3]],[[2715,5953],[39,-6],[123,1]],[[2877,5948],[-5,-4],[4,-31],[-21,-36],[24,2],[1,-44],[-10,-29],[-25,22],[15,-30],[-8,-40],[9,16],[5,-14],[-7,-40],[-4,12],[-10,-4],[-15,-28],[-7,-30],[-4,-36],[-16,0]],[[2803,5634],[-32,111],[-31,2],[-7,38],[-35,6],[-23,-23]],[[2642,5766],[1,28],[7,9],[7,30],[8,1],[14,24],[10,34],[0,-11],[11,22],[6,-4],[9,54]],[[2092,7397],[190,0]],[[2301,7041],[-209,1]],[[2092,7042],[0,355]],[[2355,6000],[0,-58]],[[2355,5942],[5,-128],[-2,-205]],[[2358,5609],[-10,13],[-10,25],[-17,-15],[-9,0],[-5,-16],[-16,29],[-7,-25],[-1,22],[-7,-11],[-7,19],[-7,0],[-12,20],[-3,-11],[-20,31],[-14,6],[-8,21],[0,225],[-84,0]],[[2121,5942],[0,59]],[[2748,6580],[21,34]],[[2769,6614],[0,-32],[122,0],[7,-18],[1,-27],[11,-29]],[[2890,6327],[-11,-10]],[[2879,6317],[-102,0]],[[2777,6317],[-29,0],[0,107]],[[2748,6424],[0,156]],[[2092,6931],[0,111]],[[2304,6757],[-5,-92],[5,-25]],[[2304,6640],[-7,19],[-17,24],[-15,0],[-5,-12],[-13,28],[-155,0]],[[2092,6699],[0,232]],[[2358,5609],[13,-10]],[[2371,5599],[0,0]],[[2371,5599],[0,-62]],[[2371,5537],[0,-119],[5,-46],[9,-48],[-1,-42],[-5,-57],[1,-32],[-6,-28],[3,-15]],[[2377,5150],[-9,-5],[-18,-32],[3,45],[-9,-12],[3,-41],[5,3],[-19,-54],[-23,-44],[-22,-68],[3,22],[13,29],[-10,5],[0,-19],[-12,-17],[6,-4],[-5,-25],[-7,5],[5,-20],[-4,-44],[-2,-60],[2,-38],[7,-61],[-6,-13],[-12,25],[-11,0],[-7,19],[-18,25],[-5,47],[-5,21],[-1,55],[-11,36],[-1,21],[-10,35],[-11,95],[-22,79],[-16,1],[-7,11],[-10,-17],[-7,-61],[-6,-26],[-29,46],[-10,30],[-4,33],[-1,36],[-9,53],[-10,19],[-16,60],[-7,11],[-9,37]],[[2023,5393],[-2,26],[99,0],[0,226],[0,297],[1,0]],[[2092,6699],[0,-233]],[[1953,6466],[-56,0],[0,117]],[[1897,6583],[0,287]],[[1897,6870],[0,62],[195,-1]],[[2991,6583],[-2,-80]],[[2989,6503],[-29,-9],[-21,-30]],[[2939,6464],[3,37],[2,87]],[[2323,6418],[32,-2],[80,5],[9,-27]],[[2444,6394],[-2,-40],[3,-35],[18,-59],[2,-35],[15,-9],[-7,-59],[1,-15],[23,-61],[3,-34],[-3,-13],[6,-34],[5,-2]],[[2508,5998],[-1,-36],[-7,-20]],[[2500,5942],[-2,0]],[[2498,5942],[-2,0]],[[2496,5942],[0,-26],[-5,-32]],[[2491,5884],[-18,0],[8,32],[-2,26],[-124,0]],[[2336,6350],[-9,36],[-4,32]],[[2690,6166],[7,3],[3,41],[6,27],[3,-18],[4,35],[8,26],[7,-1],[11,37],[6,71],[-2,29],[5,8]],[[2777,6317],[-1,-60],[20,49],[9,-13],[8,21],[8,-16],[5,-27]],[[2826,6271],[-3,-22],[-15,39],[-1,-35],[-13,-47],[-4,10],[-9,-51],[-9,21],[-1,-19],[-17,-86],[0,-21],[-26,-32],[-4,12],[-9,-16],[-7,18],[-1,21]],[[2707,6063],[-9,16],[-9,54],[1,33]],[[2444,6394],[2,26],[6,8],[5,49],[-5,17],[2,21],[20,20],[4,25],[1,36],[-6,12],[-7,34]],[[2466,6642],[79,-2]],[[2545,6640],[-1,-22],[8,-69]],[[2538,6094],[-1,-38],[-11,-10],[0,-37],[-12,18],[-6,-29]],[[2023,5393],[-47,0],[0,-52],[-23,0]],[[2491,5884],[2,-13],[-8,-19],[3,-10],[-9,-25],[3,-33],[-7,-17]],[[2475,5767],[-6,-22],[-1,-44],[-5,-7],[-4,-34],[-6,-14],[3,-19],[-7,-27],[3,-10],[-1,-55]],[[2451,5535],[-80,2]],[[1530,6582],[30,2],[88,-2]],[[1648,6582],[0,0]],[[1648,6582],[0,-349],[60,-178],[44,-139],[45,-148]],[[1795,5502],[-67,-21],[-4,15],[-2,53],[-5,25],[-18,50],[-7,-3],[-4,35],[-7,-5],[-11,17],[-10,31],[-25,4],[-5,16],[0,63],[-17,62],[-19,96],[4,38],[-17,45],[-3,68],[12,-38],[-10,60],[-3,-17],[-13,21],[1,29],[-21,82],[-4,102],[-14,50],[-1,21],[6,47],[4,69],[-5,65]],[[2887,6313],[-2,-26],[5,-46],[9,-31],[1,-41]],[[2900,6169],[-18,1],[-3,147]],[[2842,6226],[3,-17]],[[2845,6209],[-3,17]],[[2450,6757],[4,-29],[-3,-14],[3,-46],[10,-12],[2,-14]],[[2323,6418],[-5,102],[-4,8],[0,31],[-5,29],[-5,52]],[[2628,6246],[10,1],[7,-36],[15,-21],[10,-3],[11,18],[9,-39]],[[2707,6063],[-11,-32],[-10,-17],[-11,-43],[-15,-17]],[[2660,5954],[-51,2],[-31,4],[-35,-2],[-6,5],[1,-21],[-38,0]],[[2498,5942],[-2,0]],[[2900,6169],[-5,-49]],[[2895,6120],[-12,-9]],[[2883,6111],[-7,-4],[2,34],[-9,4],[-5,29],[9,9],[-10,33],[5,54],[-7,-14],[-2,-76],[2,-44],[-10,8],[-6,25],[-5,-10],[2,32]],[[2842,6191],[3,18]],[[2842,6226],[-11,21],[-5,24]],[[2572,6555],[6,15],[10,64],[0,67],[-8,75],[3,15],[-2,30],[6,34],[1,41],[5,22],[7,8],[6,27],[0,-49],[6,20],[0,39],[13,14],[-6,22],[10,25],[16,-18],[4,-17],[16,-16],[6,-39],[-5,-9],[5,-27],[-2,-43],[-7,-33],[-7,-8],[-3,-28],[7,-18],[12,44],[10,11],[7,-25],[4,-73],[3,-25],[-3,-47],[-9,2],[-6,-35],[-4,-37],[-7,-32]],[[2666,6551],[-38,-4]],[[2504,7266],[17,31],[0,-15],[-13,-21],[-4,5]],[[2472,7114],[17,29],[10,3],[35,72],[13,-7],[-14,-23],[-6,-27],[-1,-25],[6,20],[16,-11],[8,-36],[23,-7],[12,24],[18,1],[15,11],[-2,-34],[12,-8],[10,14],[5,-51],[5,-12],[8,11],[1,-20],[-16,8],[-7,-6],[-8,14],[-5,-21],[-5,16],[-14,10],[-4,-15],[-15,0],[-4,-20],[-10,-15],[5,22],[-13,-2],[-16,-86]],[[2551,6943],[-8,28]],[[2543,6971],[0,0]],[[2543,6971],[2,39],[-10,17],[1,12],[-19,11],[-8,14],[-29,23],[-6,24]],[[2474,7111],[0,0]],[[2474,7111],[-2,3]],[[2475,5767],[59,0]],[[2528,5229],[-14,3],[-17,-25]],[[2497,5207],[-9,56],[2,39],[-52,0],[3,61],[17,95],[-6,16],[2,48],[-3,13]],[[1758,7397],[334,0]],[[1897,6870],[-9,33],[-3,-25],[-22,3],[-3,-14],[-17,1],[-4,37],[-9,11],[0,23],[-8,31],[-2,32],[-5,12],[-10,-29],[-5,12],[-1,25],[7,97],[-17,29],[-11,46],[-11,20],[0,32],[-9,32],[0,119]],[[2999,6933],[3,27],[8,7]],[[3021,6706],[-3,-22]],[[2972,6667],[2,99],[10,60],[0,27],[13,21],[-2,28],[4,31]],[[2769,6614],[17,33],[8,27],[-6,55],[16,13],[22,-6],[5,-10],[16,4],[15,30],[5,0],[3,48],[-7,11],[2,19],[11,20],[17,55],[13,20],[42,0]],[[2948,6933],[-2,-44],[3,-22],[-4,-47],[5,-57],[0,-94]],[[2939,6464],[5,-4],[23,4],[8,18],[7,-17],[-31,-42],[-20,-10],[-3,17]],[[2666,6551],[14,-25],[3,9],[10,-24],[13,15],[8,-3],[20,43],[14,14]],[[1549,7078],[12,-8],[8,-26],[2,-36],[14,-13],[20,21],[10,-14],[17,16],[10,-2],[7,12],[23,12],[4,8],[58,0]],[[1734,7048],[12,-46],[-10,-68],[-3,-27],[-8,-35],[0,-23],[9,-13],[-3,-43],[0,-210]],[[1731,6583],[-83,-1]],[[1530,6582],[-3,11],[-2,55],[-4,32],[10,97],[6,172],[1,60],[-2,33],[3,26],[10,10]],[[2660,5954],[55,-1]],[[1814,6582],[83,1]],[[1813,6001],[1,581]],[[2895,6120],[-9,-34],[-8,-65],[-5,9],[3,40],[7,41]],[[2842,6191],[-4,-35],[7,5],[2,-19],[9,-8],[11,-30],[-5,-57],[4,-37],[-6,-22],[14,3],[3,-43]],[[1571,7307],[11,-22],[-2,-14],[-9,36]],[[1558,7350],[13,8],[-1,-27],[-12,19]],[[1730,7397],[0,-302],[4,-47]],[[1549,7078],[-15,1],[7,53],[-7,3],[-2,32],[-9,93],[-7,40],[2,26],[19,-26],[26,-10],[8,8],[3,-28],[-9,-37],[12,37],[2,-19],[-4,-61],[8,15],[-2,53],[5,26],[-9,26],[5,4],[-4,54],[-6,5],[-1,25],[159,-1]],[[2427,7130],[14,6],[15,22],[7,-7],[-6,-33],[6,11],[9,-15]],[[2551,6943],[-11,-44],[0,-22],[10,36],[6,8],[9,45],[1,-24],[-12,-63],[-1,-43],[-6,-35],[0,-23],[-5,-52],[3,-86]],[[2803,5634],[-5,-6],[-10,-37],[-8,-55],[-18,-47],[-13,-17],[0,-15],[-12,-34]],[[1730,7397],[28,0]],[[1814,6582],[-83,1]],[[2948,6933],[51,0]],[[2497,5207],[-8,-16],[4,-21],[5,25],[3,-20],[-2,-29],[-6,-2],[4,-30],[9,-4],[1,-42],[-19,38],[-11,-27],[-6,31],[-10,-36],[-15,30],[-8,51],[-7,12],[-12,-36],[-24,28],[-18,-9]],[[3009,6524],[-6,0],[4,21]],[[3007,6549],[-5,8],[-3,-48],[-10,-6]]]},"far":{"type":"Topology","bbox":[-128,14.544863990358664,-52.65232652326523,54],"transform":{"scale":[0.007535520899763453,0.003945908191783312],"translate":[-128,14.544863990358664]},"objects":{"far":{"type":"MultiPolygon","arcs":[[[0]],[[1]],[[2]],[[3]],[[4]],[[5]],[[6]],[[7]],[[8]],[[9]],[[10]],[[11]],[[12]],[[13]],[[14]],[[15]],[[16]],[[17]],[[18]],[[19]],[[20]],[[21]],[[22]],[[23]],[[24]],[[25]],[[26]],[[27]],[[28]],[[29]],[[30]],[[31]],[[32]],[[33]]]}},"arcs":[[[1443,4559],[319,46],[-15,-52],[503,-300],[376,1],[0,114],[233,-3],[41,-81],[16,-13],[68,-106],[71,-84],[19,-51],[21,-79],[0,-37],[23,-79],[52,-74],[59,-45],[54,-53],[23,11],[26,44],[21,109],[16,27],[46,30],[14,-12],[54,-11],[24,7],[26,-17],[10,-27],[85,-143],[15,-63],[29,-81],[5,-44],[39,-71],[32,-81],[33,-46],[7,-124],[30,-75],[16,-80],[46,-27],[9,-16],[42,-24],[14,-18],[63,-17],[58,-44],[29,23],[-11,-95],[-26,-89],[-12,-56],[-21,-158],[-6,-104],[-7,-171],[3,-92],[-15,-80],[12,-132],[24,-75],[36,-62],[-12,-74],[3,75],[-28,49],[-21,67],[15,-107],[18,-52],[51,-198],[54,-109],[34,-81],[22,-133],[40,-73],[8,-52],[14,-24],[85,-14],[22,-33],[29,-14],[34,-86],[47,5],[84,60],[57,-2],[32,11],[23,37],[36,16],[62,10],[4,-39],[19,-23],[35,-4],[35,43],[-22,67],[64,67],[28,50],[7,96],[25,46],[3,29],[-1,135],[18,114],[23,29],[48,39],[124,35],[55,39],[45,12],[116,-43],[9,25],[-24,7],[32,12],[40,-50],[7,-69],[-12,-67],[-26,-65],[-21,-31],[-27,-70],[-6,-33],[5,-51],[-34,-67],[5,-21],[29,8],[-11,-40],[-20,-19],[1,-24],[20,8],[-20,-124],[-11,-36],[-3,-53],[-12,-45],[-27,64],[3,80],[-22,-30],[-13,-63],[-30,-6],[-9,-40],[-29,-82],[-12,-13],[-31,14],[-4,-39],[-242,0],[-1,-143],[-55,1],[57,-98],[35,-41],[11,-50],[28,-30],[-3,-81],[-172,0],[-60,-190],[-2,-21],[17,-42],[-15,-64],[4,-33],[-14,-31],[-72,144],[-48,79],[-75,112],[-24,41],[-61,59],[-7,-15],[31,-20],[26,-32],[-62,42],[-26,4],[10,29],[-27,-7],[-14,33],[-17,-36],[32,-12],[-46,-13],[-44,-51],[-41,-22],[-59,-50],[-39,-10],[-40,19],[-50,46],[-75,14],[-51,61],[-51,25],[-32,58],[-123,47],[-45,51],[-109,71],[-100,115],[-32,68],[-20,13],[-30,-4],[-64,26],[-98,67],[-34,78],[-29,50],[-65,66],[-71,56],[-22,63],[-24,37],[-26,69],[-25,103],[17,29],[38,20],[-9,44],[-22,6],[34,87],[3,94],[-29,33],[-29,94],[1,85],[-20,76],[-81,144],[-22,65],[-49,109],[-19,34],[-91,116],[32,-29],[2,33],[-40,13],[-19,19],[-8,43],[-26,48],[23,16],[-44,40],[-51,58],[-4,29],[-32,-15],[19,64],[-42,-35],[-25,34],[-5,77],[30,69],[-10,58],[-28,45],[-36,-2],[-18,46],[-7,49],[-44,22],[-26,40],[-19,84],[11,53],[-30,13],[-22,-6],[-26,20],[-22,37],[-25,68],[-27,22],[-35,90],[-29,49],[-8,64],[-21,19],[-5,48],[-43,114],[-11,80],[-31,89],[-7,36],[0,72],[8,26],[-24,19],[-52,23],[-1,31],[-42,41],[-8,-27],[-19,-4],[-53,57],[-51,43],[19,-65],[-7,-27],[-5,-97],[16,-50],[17,-115],[-2,-68],[13,-54],[24,-49],[25,-24],[47,-75],[37,-86],[6,-44],[16,5],[8,-34],[15,-4],[15,-73],[30,-22],[10,-55],[8,-96],[24,-43],[29,-34],[19,-85],[25,-28],[-1,-28],[17,-32],[3,-41],[21,-25],[-15,45],[3,31],[29,-44],[4,-32],[28,-115],[5,-85],[19,-55],[15,-12],[19,-97],[18,-38],[11,-52],[-8,-50],[10,-63],[39,-62],[14,63],[32,-44],[41,-94],[5,-35],[22,-17],[11,-30],[-4,-67],[-36,-59],[-26,-24],[-22,30],[-12,85],[-24,67],[-36,34],[-54,93],[-51,57],[-35,57],[-15,-3],[-7,32],[-29,43],[-8,51],[10,113],[-16,108],[-27,76],[-37,26],[-48,68],[-13,33],[-5,59],[-16,-40],[-43,-17],[-32,62],[-21,6],[-15,29],[-44,29],[-13,54],[-60,77],[-6,27],[62,-15],[36,22],[0,-24],[22,-27],[-7,87],[19,105],[-13,45],[-22,32],[-47,92],[-44,74],[-23,11],[-67,83],[-18,52],[-1,87],[-24,28],[-9,99],[-31,42],[-5,59],[-43,91],[5,73],[-30,37],[-9,51],[-20,37],[-8,48]],[[5449,1459],[-11,21],[12,42],[23,0],[-24,-63]],[[1970,3677],[-15,11],[-41,80],[-1,41],[28,-40],[0,-20],[23,-9],[6,-63]],[[1703,3428],[-25,8],[21,57],[4,-65]],[[2096,3665],[-10,-60],[-31,20],[6,81],[25,18],[10,-59]],[[2116,2535],[-16,46],[-16,15],[10,41],[8,85],[4,-15],[-9,-86],[19,-86]],[[6126,2184],[35,-12],[40,4],[12,-18],[71,11],[37,-41],[39,0],[53,-51],[17,-41],[36,-43],[78,-11],[72,-65],[37,-53],[30,-26],[19,19],[47,-58],[-30,-8],[21,-34],[15,28],[60,-77],[51,-15],[25,-23],[47,-6],[16,-30],[-19,-46],[13,-20],[57,-4],[34,-11],[30,-25],[29,-48],[46,-23],[1,-32],[-12,-22],[-51,-6],[-64,-39],[-5,27],[-18,-30],[-35,0],[-28,18],[-52,7],[-83,-13],[-29,-12],[-95,-9],[21,57],[46,55],[14,49],[-17,39],[-31,11],[-70,7],[-16,11],[-50,74],[-6,62],[-13,55],[-25,27],[-60,-15],[-84,46],[-43,33],[-33,64],[-2,-16],[-62,-2],[-16,11],[-14,43],[-4,-31],[-18,-10],[-12,20],[-49,4],[-35,48],[42,19],[2,43],[-21,12],[-110,2],[-36,-44],[-50,-74],[-73,-19],[-13,-52],[-28,-11],[-35,-32],[0,40],[-44,-26],[-5,16],[45,35],[28,11],[-5,77],[42,73],[105,77],[78,19],[42,28],[33,9],[35,-7]],[[6679,1877],[-5,-8],[-28,43],[38,-9],[-5,-26]],[[6552,2029],[36,-3],[9,-21],[-34,2],[-11,22]],[[6030,1781],[-39,-33],[-28,7],[12,31],[-14,50],[12,39],[36,-14],[21,-80]],[[106,9147],[66,-31],[66,-16],[96,-34],[33,-78],[40,-71],[14,-51],[25,-26],[86,-52],[23,-35],[25,-66],[18,-61],[11,30],[17,-62],[-41,-31],[-43,13],[-103,54],[-57,41],[-2,16],[38,52],[5,47],[-15,-50],[-58,-5],[-13,-14],[-49,38],[25,24],[-50,46],[-30,19],[-41,-6],[1,44],[51,15],[-25,2],[-32,27],[-12,28],[-29,17],[-29,-16],[-17,65],[-14,-22],[-15,29],[-53,-9],[2,47],[-15,8],[7,25],[36,9],[20,-19],[3,45],[-38,6],[3,-18],[-36,-10],[0,92],[38,-10],[68,-46]],[[7072,7719],[-20,0],[-42,-26],[-30,-33],[-63,-90],[-36,-28],[-42,-63],[-47,-109],[-252,0],[-60,-40],[15,-48],[-1,-44],[20,-50],[-16,-27],[-161,-110],[-137,-40],[-154,-135],[-33,0],[-45,40],[-15,36],[-1,42],[10,40],[27,21],[43,61],[18,114],[36,126],[-55,450],[-138,119],[17,45],[-20,31],[-48,-8],[-15,36],[-13,82],[-50,-23],[-28,45],[-13,67],[-206,162],[-230,173],[-29,20],[-31,-10],[-88,-61],[-24,-7],[-71,5],[-14,26],[-86,-3],[-13,24],[-27,-1],[-23,-23],[-40,-12],[-87,71],[-32,-15],[-11,40],[-66,45],[-51,1],[-43,-23],[-47,33],[-75,22],[-24,66],[-7,76],[-39,16],[-1,-95],[-3666,0],[-19,21],[-18,-25],[-2,39],[-15,4],[-5,29],[35,17],[-41,4],[12,85],[-19,-26],[-1,-30],[-26,-16],[-48,25],[-22,43],[18,14],[14,-34],[7,19],[-18,35],[0,47],[-11,-27],[-40,-27],[-26,10],[-40,53],[0,14],[-36,88],[25,55],[-1,48],[-25,-80],[-20,-9],[-35,5],[-8,39],[-10,-42],[-47,1],[-64,16],[4,14],[69,20],[-11,6],[-52,-11],[-19,15],[19,29],[-20,7],[1,48],[-16,-36],[-56,-12],[-51,31],[-35,41],[10,70],[28,46],[18,11],[79,13],[-86,1],[-14,-7],[-27,-51],[-27,49],[-2,38],[18,44],[-17,-1],[8,51],[47,42],[27,9],[31,-26],[24,-42],[-15,46],[-30,22],[-3,36],[31,54],[-75,-99],[-36,-18],[-28,-88],[0,522],[6075,0],[11,-46],[-7,-53],[4,-87],[-13,-27],[0,-50],[32,-38],[55,-96],[4,-17],[-32,-38],[35,5],[20,-24],[57,-43],[42,-54],[28,-94],[-30,-31],[-17,-34],[43,44],[49,-6],[36,-27],[50,-76],[-34,61],[3,59],[25,56],[21,15],[40,-42],[18,-66],[10,58],[13,17],[-33,60],[20,58],[17,17],[28,56],[-9,61],[-22,34],[1,58],[-24,48],[-13,93],[-15,77],[22,32],[-17,28],[9,12],[2656,0],[-67,-42],[-44,0],[-25,-19],[-17,-41],[-34,14],[40,-42],[-26,-24],[-5,-32],[24,10],[42,50],[68,36],[53,59],[49,31],[170,0],[15,-61],[-44,-32],[21,-41],[42,51],[23,17],[50,6],[15,-35],[32,-10],[19,-29],[22,-66],[-12,-53],[8,-31],[-5,-37],[9,-23],[-69,-25],[64,-9],[18,-20],[-10,-17],[-30,2],[42,-32],[-1,-27],[-43,-53],[-127,-119],[-43,5],[-62,-13],[-34,-27],[-55,-4],[-96,-133],[-28,-26],[-31,-47],[-28,-19],[-9,-25],[-26,-16],[-70,-9],[-26,7],[-20,-11],[-44,0],[-58,-25],[-26,32],[-105,18],[-56,-2],[-14,-13],[-46,4],[-19,12],[-58,-9],[-45,9],[-48,-8],[-53,11],[-66,-15],[-25,9],[-23,-24],[-49,3],[-59,-55],[-39,-100],[-4,-38],[-14,-26],[-91,-23],[-30,-15],[8,-12],[-54,-36],[-5,-17],[-35,-28],[-40,-65],[-19,-48],[-40,-47],[-24,2],[-70,40],[-84,23],[23,-22],[45,-4],[85,-46],[12,-19],[-18,-67],[-52,-84],[-19,-20],[-35,-71],[-54,-55],[-20,-33],[-65,-31],[-17,4],[-43,-33],[-7,-18],[-56,-51],[-40,-19],[-65,-120],[-32,-7],[-43,-53],[-37,8],[42,-25],[3,-22],[-50,-36],[-47,-51]],[[8877,7957],[32,2],[-26,-63],[48,18],[32,50],[-37,-4],[20,41],[38,50],[10,-30],[48,-9],[-9,-36],[14,-13],[-74,-79],[-38,-16],[-27,5],[-55,-9],[-22,36],[-5,57],[11,58],[22,33],[49,125],[40,52],[22,1],[10,-68],[-33,-143],[-70,-58]],[[7072,7719],[58,47],[29,13],[39,39],[27,8],[12,52],[41,96],[56,44],[32,43],[34,23],[7,17],[38,31],[30,5],[55,26],[98,70],[66,112],[59,89],[14,36],[22,20],[42,58],[58,46],[42,43],[90,58],[58,28],[69,41],[56,22],[87,13],[91,-18],[36,-22],[40,-47],[7,-29],[-40,9],[36,-39],[-14,-67],[-38,-16],[-17,-34],[-66,-52],[-29,2],[-59,40],[-21,-21],[-49,4],[-34,-25],[37,11],[89,-52],[12,-42],[24,-2],[34,32],[30,9],[40,-31],[-20,-39],[-8,-51],[-54,-68],[17,-13],[48,2],[-10,-43],[12,-48],[12,-7],[10,-80],[14,-29],[83,-19],[12,-15],[-30,-22],[46,-42],[26,5],[29,-31],[25,7],[54,-10],[-7,-23],[35,-7],[71,62],[10,-39],[29,-18],[22,11],[28,-62],[-24,-19],[47,-5],[10,-14],[-71,-35],[-126,-79],[-105,-51],[-39,11],[7,-36],[-28,-14],[-32,40],[-13,-40],[-9,25],[-23,-36],[8,-27],[-40,-49],[-38,-70],[-29,-35],[-32,-15],[-3,-30],[-18,-8],[-34,10],[-19,60],[-20,-13],[-12,18],[-9,83],[13,57],[30,51],[-6,12],[31,9],[24,27],[-21,0],[100,92],[76,47],[-3,-43],[16,-6],[19,26],[46,24],[50,13],[-33,8],[-38,-4],[-24,8],[-69,0],[-19,-22],[-22,13],[11,26],[36,38],[32,53],[-22,-7],[-20,35],[5,-34],[-24,-44],[-16,-3],[-86,-73],[-45,-29],[-39,28],[10,-20],[-45,-41],[-9,13],[-48,-20],[-6,20],[-44,14],[-9,-12],[-21,31],[-3,50],[8,33],[-46,25],[-3,350],[-57,67],[-78,-37],[-30,18],[0,39],[-25,9],[-102,-191],[-8,-68],[-24,-48],[-6,-87],[-17,-43],[-37,-47],[2,-31],[-15,-6],[-13,-37],[-14,20],[-18,-19],[-25,7],[-25,-72],[-424,-1]],[[9626,9375],[-16,-38],[-60,-15],[5,-33],[21,2],[5,-44],[-9,-32],[-28,-32],[-7,-33],[-33,-59],[-42,-90],[-20,-75],[4,-39],[59,81],[17,40],[16,-7],[-5,-31],[31,20],[22,-15],[31,10],[-7,-27],[-61,-48],[-13,-21],[36,13],[-3,-23],[-26,-32],[36,15],[19,-20],[52,20],[10,-8],[-17,-103],[12,31],[30,16],[73,68],[3,-51],[23,23],[42,6],[44,-30],[7,-46],[-44,-64],[-34,-26],[41,6],[-15,-18],[35,-15],[-12,-39],[-37,-27],[69,16],[18,20],[26,4],[21,20],[5,-22],[-15,-43],[-26,-12],[-37,-37],[9,-25],[-43,-22],[28,1],[-28,-57],[13,-38],[22,3],[42,85],[48,38],[8,-9],[-33,-76],[-8,-41],[6,-50],[34,42],[12,38],[9,-6],[8,-50],[-4,-31],[-30,-82],[3,-23],[-10,-49],[-20,-41],[-24,15],[-32,-21],[-11,12],[5,115],[-7,1],[-30,-51],[-29,-29],[-13,15],[11,52],[30,76],[-16,94],[-27,26],[-50,-123],[12,43],[-23,-35],[-27,-5],[-31,-54],[-7,-32],[-24,-36],[-28,2],[-34,-12],[-22,16],[15,36],[46,23],[40,73],[43,31],[-10,12],[-56,10],[-9,-40],[-19,-9],[-38,16],[-29,-1],[28,17],[2,58],[-36,-8],[-12,-30],[-32,-14],[-65,-11],[-130,26],[-54,0],[0,14],[-37,-26],[-67,-14],[-13,8],[-20,66],[12,33],[42,42],[47,64],[37,28],[-52,5],[-60,-5],[44,56],[-9,-24],[25,-13],[30,103],[12,20],[40,-2],[16,39],[-28,7],[-3,33],[26,39],[30,-13],[-18,53],[28,83],[33,111],[18,36],[20,2],[-15,21],[22,23],[16,39],[-4,18],[31,33],[7,33],[31,32],[65,43],[45,-25],[-2,23],[24,9],[8,-15]],[[8785,8755],[-56,-3],[-109,37],[-70,44],[-14,34],[-28,31],[-73,44],[-6,15],[46,14],[112,-32],[58,-28],[138,-107],[16,-37],[-14,-12]],[[8518,8090],[17,24],[42,-14],[32,-22],[128,17],[18,-17],[-66,-55],[-1,-57],[-46,6],[-2,31],[-21,37],[-30,-29],[-48,19],[-16,42],[-47,7],[1,35],[-37,20],[4,32],[48,75],[2,-38],[-15,-35],[25,-35],[0,-33],[12,-10]],[[6273,9682],[-37,3],[-110,50],[-27,23],[26,35],[68,10],[26,-5],[49,-72],[5,-44]],[[511,8866],[-28,15],[-36,37],[28,-2],[36,-50]],[[180,8885],[-39,29],[2,30],[25,2],[12,-61]],[[373,9010],[-22,54],[21,20],[16,-43],[-15,-31]],[[8770,8297],[-13,-13],[11,49],[40,42],[6,-8],[-44,-70]],[[7224,7837],[-53,-7],[37,31],[28,36],[-12,-60]],[[9808,8920],[15,-20],[-41,-17],[4,31],[22,6]],[[6452,9480],[-35,15],[50,19],[-15,-34]],[[6681,2459],[13,-28],[5,-68],[-7,-33],[-26,3],[-11,74],[-20,45],[40,17],[6,-10]],[[6738,2879],[-23,30],[20,34],[6,84],[-41,90],[-47,24],[44,-9],[37,-67],[25,-28],[4,-49],[-17,-24],[-8,-85]],[[7295,1685],[-18,-55],[-66,-10],[-2,42],[33,25],[26,-12],[23,40],[4,-30]],[[6669,2575],[0,-62],[-40,-44],[-19,45],[-33,41],[26,7],[-7,25],[18,68],[-7,43],[32,-27],[0,-20],[30,-76]],[[6570,3088],[16,-8],[57,12],[2,-21],[-41,-6],[-58,-34],[-17,20],[22,19],[5,35],[14,-17]],[[7139,1944],[-7,5],[43,62],[-3,60],[16,-45],[-19,-45],[-30,-37]],[[6814,2773],[41,-39],[29,-49],[-6,-124],[-20,43],[14,1],[7,75],[-27,49],[-34,30],[-21,-1],[9,35],[8,-20]],[[7055,2116],[-18,44],[-33,25],[9,43],[-21,64],[13,-11],[20,-100],[29,-38],[1,-27]],[[6993,2447],[-26,-15],[12,32],[-33,82],[1,23],[17,-64],[29,-58]]]}}</script>
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3.2.4/dist/d3-array.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/dist/d3-geo.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rough-notation@0.5.1/lib/rough-notation.iife.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  // ------------------------------------------------------------------
+  // Small helpers
+  // ------------------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, props = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (v == null || v === false) continue;
+      if (k === 'class') n.className = v;
+      else if (k === 'text') n.textContent = v;
+      else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v === true ? '' : v);
+    }
+    for (const kid of kids.flat()) if (kid != null && kid !== false) n.append(kid);
+    return n;
+  };
+  const svgEl = (tag, attrs = {}, ...kids) => {
+    const n = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs)) if (v != null) n.setAttribute(k, v);
+    for (const kid of kids.flat()) if (kid != null) n.append(kid);
+    return n;
+  };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const pad = (n) => String(n).padStart(2, '0');
+  const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => { const c = new Date(d); c.setDate(c.getDate() + n); return c; };
+  const shortDate = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+  const monthShort = new Intl.DateTimeFormat('en-US', { month: 'short' });
+  const longDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const list = (items) => new Intl.ListFormat('en-US', { style: 'long', type: 'conjunction' }).format(items);
+  const dur = (min) => (min >= 60 ? `${Math.floor(min / 60)}h ${pad(min % 60)}m` : `${min} min`);
+  const fmtClock = (min) => {
+    const m = ((Math.round(min) % 1440) + 1440) % 1440;
+    const h = Math.floor(m / 60);
+    return `${h % 12 === 0 ? 12 : h % 12}:${pad(m % 60)} ${h < 12 ? 'AM' : 'PM'}`;
+  };
+
+  // Motion comes from anime.js. Everything still works, standing still, without it.
+  const A = window.anime;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const moving = () => Boolean(A) && !still.matches;
+
+  // A top-down airliner, nose pointing right. Used on the map and on each ticket.
+  const PLANE = 'M10,0 L3,-1.6 L-1,-7.5 L-3.4,-7.5 L-1.4,-1.4 L-6.2,-1.1 L-7.8,-3.6 L-9.4,-3.6 L-8.4,0 L-9.4,3.6 L-7.8,3.6 L-6.2,1.1 L-1.4,1.4 L-3.4,7.5 L-1,7.5 L3,1.6 Z';
+
+  // ------------------------------------------------------------------
+  // Places. Where each airport sits, for the map and for sunrise and sunset.
+  // Home runs on Eastern time; edit HOME_TZ if home ever moves.
+  // ------------------------------------------------------------------
+  let homeZone = 'America/New_York';
+  const AIRPORTS = {
+    VRB: [27.656, -80.418, 'Vero Beach'], MLB: [28.103, -80.645, 'Melbourne'], PBI: [26.683, -80.096, 'Palm Beach'],
+    MCO: [28.429, -81.309, 'Orlando'], ATL: [33.637, -84.428, 'Atlanta'], CLT: [35.214, -80.943, 'Charlotte'],
+    BWI: [39.175, -76.668, 'Baltimore'], RDU: [35.878, -78.788, 'Raleigh-Durham'], IAD: [38.945, -77.456, 'Washington'],
+    DCA: [38.852, -77.038, 'Washington'], PVD: [41.724, -71.428, 'Providence'], HPN: [41.067, -73.708, 'White Plains'],
+    BOS: [42.364, -71.005, 'Boston'], BDL: [41.939, -72.683, 'Hartford'], ISP: [40.795, -73.100, 'Long Island'],
+    PIT: [40.492, -80.233, 'Pittsburgh'], LGA: [40.777, -73.873, 'New York'], JFK: [40.640, -73.779, 'New York'],
+    EWR: [40.693, -74.169, 'Newark'], PHL: [39.872, -75.241, 'Philadelphia'], BNA: [36.125, -86.678, 'Nashville'],
+    ORD: [41.979, -87.905, 'Chicago'], MDW: [41.786, -87.752, 'Chicago'], DTW: [42.212, -83.353, 'Detroit'],
+    CLE: [41.412, -81.850, 'Cleveland'], CMH: [39.998, -82.892, 'Columbus'], CVG: [39.049, -84.668, 'Cincinnati'],
+    IND: [39.717, -86.294, 'Indianapolis'], SDF: [38.174, -85.736, 'Louisville'], MEM: [35.042, -89.977, 'Memphis'],
+    MSY: [29.993, -90.258, 'New Orleans'], BHM: [33.563, -86.754, 'Birmingham'], TYS: [35.811, -83.994, 'Knoxville'],
+    AVL: [35.436, -82.542, 'Asheville'], GSP: [34.896, -82.219, 'Greenville'], CHS: [32.899, -80.041, 'Charleston'],
+    SAV: [32.128, -81.202, 'Savannah'], MYR: [33.680, -78.928, 'Myrtle Beach'], ILM: [34.271, -77.903, 'Wilmington'],
+    ORF: [36.895, -76.201, 'Norfolk'], RIC: [37.505, -77.320, 'Richmond'], GSO: [36.098, -79.937, 'Greensboro'],
+    SYR: [43.111, -76.106, 'Syracuse'], ROC: [43.119, -77.672, 'Rochester'], BUF: [42.941, -78.732, 'Buffalo'],
+    ALB: [42.748, -73.802, 'Albany'], PWM: [43.646, -70.309, 'Portland'], MHT: [42.933, -71.436, 'Manchester'],
+    HVN: [41.264, -72.887, 'New Haven'], SWF: [41.504, -74.105, 'Newburgh'], TTN: [40.277, -74.814, 'Trenton'],
+    ACY: [39.458, -74.577, 'Atlantic City'], ABE: [40.652, -75.441, 'Allentown'], MDT: [40.194, -76.763, 'Harrisburg'],
+    STL: [38.749, -90.370, 'St. Louis'], MKE: [42.947, -87.897, 'Milwaukee'], MSP: [44.885, -93.222, 'Minneapolis'],
+    MCI: [39.298, -94.714, 'Kansas City'], DFW: [32.900, -97.040, 'Dallas'], IAH: [29.990, -95.337, 'Houston'],
+    HOU: [29.645, -95.279, 'Houston'], AUS: [30.197, -97.666, 'Austin'], LEX: [38.037, -84.606, 'Lexington'],
+    CHA: [35.035, -85.204, 'Chattanooga'], HSV: [34.637, -86.775, 'Huntsville'], CAE: [33.939, -81.120, 'Columbia'],
+    TPA: [27.976, -82.533, 'Tampa'], MIA: [25.796, -80.287, 'Miami'], FLL: [26.073, -80.153, 'Fort Lauderdale'],
+    JAX: [30.494, -81.688, 'Jacksonville'], TLH: [30.397, -84.350, 'Tallahassee'], PNS: [30.473, -87.187, 'Pensacola'],
+    EYW: [24.556, -81.760, 'Key West'], RSW: [26.536, -81.755, 'Fort Myers'], SRQ: [27.395, -82.554, 'Sarasota'],
+    BTV: [44.472, -73.153, 'Burlington'], DAY: [39.902, -84.219, 'Dayton'], GRR: [42.881, -85.523, 'Grand Rapids'],
+  };
+  const codeForCity = (city) => {
+    const want = String(city ?? '').toLowerCase();
+    return Object.keys(AIRPORTS).find((c) => AIRPORTS[c][2].toLowerCase() === want) ?? null;
+  };
+
+  // ------------------------------------------------------------------
+  // Built-in sample trips.
+  // Used only when the page is opened without the Daytrippin' server (as a shared
+  // page, or straight from the folder). It mirrors what server.mjs answers in sample
+  // mode: the functions in the marked block are engine.mjs as written, and SAMPLE is
+  // the table in sources.mjs. With the server running, none of this is used.
+  // ------------------------------------------------------------------
+  const demo = (() => {
+    const HOME = {
+      name: 'Vero Beach',
+      airports: [
+        { code: 'VRB', city: 'Vero Beach', driveMin: 10 },
+        { code: 'MLB', city: 'Melbourne', driveMin: 45 },
+        { code: 'PBI', city: 'Palm Beach', driveMin: 90 },
+        { code: 'MCO', city: 'Orlando', driveMin: 110 },
+        { code: 'MIA', city: 'Miami', driveMin: 140 },
+      ],
+    };
+    const DEFAULTS = { exitMin: 20, rideMin: 35, bufferMin: 90, minTownMin: 180, maxDriveMin: 140, cheapUnder: 60 };
+    const RIDE_MIN = {};
+    const PER_AIRPORT = 4;
+    const SAMPLE = {
+      VRB: {
+        BWI: { city: 'Baltimore', price: 78, outs: [['12:00', '14:15', 135, 'Breeze']], backs: [['19:55', '22:20', 145, 'Breeze', 78]] },
+        CLT: { city: 'Charlotte', price: 159, outs: [['13:36', '15:25', 109, 'American']], backs: [] },
+      },
+      MLB: {
+        ATL: { city: 'Atlanta', price: 118, outs: [['06:00', '07:35', 95, 'Delta'], ['10:15', '11:50', 95, 'Delta']],
+          backs: [['17:10', '18:40', 90, 'Delta', 118], ['19:55', '21:25', 90, 'Delta', 128]] },
+        CLT: { city: 'Charlotte', price: 124, outs: [['06:05', '07:50', 105, 'American']],
+          backs: [['18:40', '20:25', 105, 'American', 124], ['21:05', '22:50', 105, 'American', 139]] },
+      },
+      PBI: {
+        DCA: { city: 'Washington', price: 104, outs: [['06:30', '08:55', 145, 'American']], backs: [['19:15', '21:50', 155, 'American', 104]] },
+        LGA: { city: 'New York', price: 89, outs: [['06:00', '08:50', 170, 'JetBlue']], backs: [['20:30', '23:35', 185, 'JetBlue', 89]] },
+        ATL: { city: 'Atlanta', price: 79, outs: [['07:00', '08:45', 105, 'Delta']], backs: [['18:30', '20:15', 105, 'Delta', 79]] },
+      },
+      MCO: {
+        BNA: { city: 'Nashville', price: 54, outs: [['07:05', '08:05', 120, 'Southwest']], backs: [['18:45', '21:40', 115, 'Southwest', 54]] },
+        ATL: { city: 'Atlanta', price: 39, outs: [['06:15', '07:45', 90, 'Frontier']], backs: [['20:40', '22:10', 90, 'Frontier', 39]] },
+        DCA: { city: 'Washington', price: 68, outs: [['06:45', '08:55', 130, 'Southwest']], backs: [['19:30', '21:45', 135, 'Southwest', 68]] },
+        PHL: { city: 'Philadelphia', price: 42, outs: [['06:20', '08:45', 145, 'Frontier']], backs: [['19:35', '22:05', 150, 'Frontier', 42]] },
+      },
+      MIA: {
+        ATL: { city: 'Atlanta', price: 38, outs: [['07:30', '09:25', 115, 'Frontier']], backs: [['19:10', '21:05', 115, 'Frontier', 38]] },
+        PHL: { city: 'Philadelphia', price: 48, outs: [['07:05', '09:55', 170, 'Frontier']], backs: [['18:50', '21:45', 175, 'Frontier', 48]] },
+        CLT: { city: 'Charlotte', price: 74, outs: [['06:40', '08:45', 125, 'American']], backs: [['19:25', '21:30', 125, 'American', 74]] },
+      },
+    };
+
+    // ---- engine.mjs, as written ----
+    const DAY = 1440;
+    function parseLocal(s) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/.exec(String(s));
+      if (!m) throw new Error(`Unreadable time: ${s}`);
+      const day = Math.round(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000);
+      const minutes = +m[4] * 60 + +m[5];
+      return { date: `${m[1]}-${m[2]}-${m[3]}`, day, minutes, abs: day * DAY + minutes };
+    }
+    function fmtDur(min) {
+      const m = Math.max(0, Math.round(min));
+      const h = Math.floor(m / 60);
+      return h > 0 ? `${h}h ${pad(m % 60)}m` : `${m} min`;
+    }
+    function sizeLabel(townMin) {
+      if (townMin < 180) return 'Lunch run';
+      if (townMin < 360) return 'Half day';
+      return 'Full day';
+    }
+    function evaluateTrip(trip, opts = {}) {
+      const o = { exitMin: 20, rideMin: 35, bufferMin: 90, minTownMin: 180, homeByMin: null, maxPrice: null, ...opts };
+      const od = parseLocal(trip.out.depart);
+      const oa = parseLocal(trip.out.arrive);
+      const bd = parseLocal(trip.back.depart);
+      const ba = parseLocal(trip.back.arrive);
+      const base = od.day * DAY;
+      const destBase = oa.day * DAY;
+      const drive = trip.origin?.driveMin ?? 0;
+      const ride = trip.rideMin ?? o.rideMin;
+      const dur = trip.out.durationMin;
+      const shift = Number.isFinite(dur) ? Math.round((od.abs + dur - oa.abs) / 30) * 30 : 0;
+      const gapMin = bd.abs - oa.abs;
+      const townMin = gapMin - o.exitMin - 2 * ride - o.bufferMin;
+      const townFrom = oa.abs + o.exitMin + ride;
+      const townTo = bd.abs - o.bufferMin - ride;
+      const leaveHome = od.abs - o.bufferMin - drive;
+      const door = ba.abs + o.exitMin + drive;
+      const reasons = [];
+      if (ba.day !== od.day) reasons.push('lands after midnight');
+      if (gapMin <= 0) reasons.push('the flight back leaves before you land');
+      else if (townMin < o.minTownMin) reasons.push(`only ${fmtDur(townMin)} in town`);
+      if (o.homeByMin != null && door - base > o.homeByMin) reasons.push(`home about ${fmtClock(door - base)}`);
+      if (o.maxPrice != null && trip.price > o.maxPrice) reasons.push(`$${trip.price} is over budget`);
+      const perHour = townMin > 0 && Number.isFinite(trip.price) ? trip.price / (townMin / 60) : null;
+      const h = (t) => t - base;
+      const d = (t) => t - destBase;
+      const onHome = (t) => t + shift - base;
+      const strip = [
+        { kind: 'ground', from: h(leaveHome), to: h(od.abs) },
+        { kind: 'air', from: h(od.abs), to: onHome(oa.abs) },
+        { kind: 'ground', from: onHome(oa.abs), to: onHome(townFrom) },
+        { kind: 'town', from: onHome(townFrom), to: onHome(townTo) },
+        { kind: 'ground', from: onHome(townTo), to: onHome(bd.abs) },
+        { kind: 'air', from: onHome(bd.abs), to: h(ba.abs) },
+        { kind: 'ground', from: h(ba.abs), to: h(door) },
+      ].filter((s) => s.to > s.from);
+      return {
+        origin: trip.origin, dest: trip.dest, price: trip.price, out: trip.out, back: trip.back,
+        qualifies: reasons.length === 0, reasons,
+        gapMin, townMin, perHour, size: sizeLabel(townMin),
+        tzShiftMin: shift, awayMin: door - leaveHome, doorNextDay: door - base >= DAY,
+        home: { leave: h(leaveHome), depart: h(od.abs), land: h(ba.abs), door: h(door) },
+        there: { land: d(oa.abs), townFrom: d(townFrom), townTo: d(townTo), depart: d(bd.abs) },
+        strip,
+      };
+    }
+    function pickBest(candidate, opts = {}) {
+      const { backs = [], ...rest } = candidate;
+      if (!backs.length) {
+        return { origin: candidate.origin, dest: candidate.dest, price: candidate.price, qualifies: false, reasons: ['no flight back that day'] };
+      }
+      const evaluated = backs.map((back) => evaluateTrip({ ...rest, back, price: back.price ?? candidate.price }, opts));
+      const byTown = (a, b) => b.townMin - a.townMin || a.price - b.price;
+      const passing = evaluated.filter((t) => t.qualifies).sort(byTown);
+      if (passing.length) return passing[0];
+      return evaluated.sort((a, b) => a.reasons.length - b.reasons.length || byTown(a, b))[0];
+    }
+    function allThatPass(candidate, opts = {}) {
+      const { backs = [], ...rest } = candidate;
+      if (!backs.length) return [pickBest(candidate, opts)];
+      const evaluated = backs.map((back) => evaluateTrip({ ...rest, back, price: back.price ?? candidate.price }, opts));
+      const passing = evaluated.filter((t) => t.qualifies);
+      return passing.length ? passing : [pickBest(candidate, opts)];
+    }
+    function rank(trips, sort = 'price') {
+      const by = {
+        price: (a, b) => a.price - b.price || b.townMin - a.townMin,
+        town: (a, b) => b.townMin - a.townMin || a.price - b.price,
+        value: (a, b) => (a.perHour ?? Infinity) - (b.perHour ?? Infinity),
+      };
+      return [...trips].sort(by[sort] ?? by.price);
+    }
+    // ---- end of engine.mjs ----
+
+    const num = (v, fallback) => {
+      if (v == null || v === '') return fallback;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    };
+    const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+    const hm = (v) => { const m = /^(\d{1,2}):(\d{2})$/.exec(v ?? ''); return m ? +m[1] * 60 + +m[2] : null; };
+
+    function candidatesFor(date, airports) {
+      const homeCodes = new Set(HOME.airports.map((a) => a.code));
+      const leg = ([dep, arr, durationMin, airline, price]) => ({ depart: `${date} ${dep}`, arrive: `${date} ${arr}`, durationMin, airline, price });
+      const out = [];
+      for (const airport of airports) {
+        const dests = Object.entries(SAMPLE[airport.code] ?? {})
+          .filter(([code]) => !homeCodes.has(code))
+          .sort((a, b) => a[1].price - b[1].price)
+          .slice(0, PER_AIRPORT);
+        for (const [code, r] of dests) {
+          const outs = r.outs.map((o) => leg([...o, r.price]));
+          if (!outs.length) continue;
+          const first = outs.reduce((a, b) => (parseLocal(a.arrive).abs <= parseLocal(b.arrive).abs ? a : b));
+          out.push({ origin: airport, dest: { code, city: r.city }, price: first.price, out: first, backs: r.backs.map(leg) });
+        }
+      }
+      return out;
+    }
+
+    function present(t, date) {
+      const people = state.passengers === 2 ? 2 : 1;
+      const [, month, day] = date.split('-');
+      const stamp = `${day}${month}`;
+      return {
+        city: t.dest.city, code: t.dest.code,
+        from: { code: t.origin.code, city: t.origin.city, drive: fmtDur(t.origin.driveMin) },
+        price: t.price,
+        town: fmtDur(t.townMin), townMin: t.townMin, size: t.size,
+        perHour: t.perHour == null ? null : Math.round(t.perHour),
+        airlineOut: t.out.airline ?? null, airlineBack: t.back.airline ?? null,
+        leaveHome: fmtClock(t.home.leave), depart: fmtClock(t.home.depart),
+        landThere: fmtClock(t.there.land), leaveThere: fmtClock(t.there.depart),
+        landHome: fmtClock(t.home.land), door: fmtClock(t.home.door),
+        doorNextDay: t.doorNextDay, tzShiftMin: t.tzShiftMin, away: fmtDur(t.awayMin),
+        strip: t.strip,
+        link: `https://www.aviasales.com/search/${t.origin.code}${stamp}${t.dest.code}${stamp}${people}`,
+        townLink: `https://www.getyourguide.com/s/?q=${encodeURIComponent(t.dest.city)}&date_from=${date}&date_to=${date}`,
+      };
+    }
+
+    return {
+      config: () => ({ mode: 'sample', home: HOME, defaults: DEFAULTS, affiliate: { flights: false, town: false } }),
+      search(q) {
+        const date = q.date ?? '';
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Pick a day first.');
+        if (date < iso(new Date())) throw new Error('That day has already passed. Pick a later one.');
+        const maxDrive = num(q.maxDrive, DEFAULTS.maxDriveMin);
+        const airports = HOME.airports.filter((a) => a.driveMin <= maxDrive);
+        if (!airports.length) throw new Error('No home airport is within that drive.');
+        const opts = {
+          exitMin: DEFAULTS.exitMin, rideMin: DEFAULTS.rideMin,
+          bufferMin: clamp(num(q.buffer, DEFAULTS.bufferMin), 30, 240),
+          minTownMin: q.short ? 1 : DEFAULTS.minTownMin,
+          homeByMin: hm(q.homeBy), maxPrice: num(q.maxPrice, null),
+        };
+        const people = q.passengers === 2 ? 2 : 1;
+        const scale = (c) => people === 1 ? c : {
+          ...c,
+          price: c.price * people,
+          out: { ...c.out, price: (c.out.price ?? c.price) * people },
+          backs: (c.backs ?? []).map((b) => ({ ...b, price: (b.price ?? c.price) * people })),
+        };
+        const scored = candidatesFor(date, airports).map(scale).flatMap((c) => allThatPass({ ...c, rideMin: RIDE_MIN[c.dest.code] }, opts));
+        const trips = rank(scored.filter((t) => t.qualifies), q.sort ?? 'price');
+        const hidden = scored.filter((t) => !t.qualifies).map((t) => ({
+          city: t.dest.city, from: t.origin.city, reasons: t.reasons, code: t.dest.code, fromCode: t.origin.code,
+        }));
+        return {
+          mode: 'sample', date, home: HOME.name, airports: airports.map((a) => a.city),
+          assumptions: { exitMin: opts.exitMin, rideMin: opts.rideMin, bufferMin: opts.bufferMin },
+          trips: trips.map((t) => present(t, date)), hidden,
+          calls: 0, cached: true, partial: false, notes: [],
+        };
+      },
+    };
+  })();
+
+  // ------------------------------------------------------------------
+  // Where answers come from: the Daytrippin' server when it is there,
+  // the built-in sample when it is not.
+  // ------------------------------------------------------------------
+  const server = {
+    async config() {
+      const signal = AbortSignal.timeout ? AbortSignal.timeout(3500) : undefined;
+      const res = await fetch('/api/config', { signal });
+      if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) throw new Error('no server');
+      const cfg = await res.json();
+      if (!cfg?.home?.airports || !cfg.defaults) throw new Error('no server');
+      return cfg;
+    },
+    async search(q) {
+      const p = new URLSearchParams({ date: q.date, sort: q.sort, maxDrive: q.maxDrive, buffer: q.buffer, passengers: q.passengers === 2 ? '2' : '1' });
+      if (q.place) p.set('place', q.place);
+      if (q.ports) p.set('ports', q.ports);
+      if (q.homeBy) p.set('homeBy', q.homeBy);
+      if (q.maxPrice) p.set('maxPrice', q.maxPrice);
+      if (q.short) p.set('short', '1');
+      const res = await fetch(`/api/search?${p}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'The search did not finish.');
+      return data;
+    },
+  };
+  let source = server;
+  let standalone = false;
+
+  // ------------------------------------------------------------------
+  // State
+  // ------------------------------------------------------------------
+  const state = { date: '', phrase: 'tomorrow', sort: 'price', maxDrive: 140, buffer: 90, homeBy: '', maxPrice: '', short: false, passengers: 1, place: '', ports: '' };
+  let config = null;
+  let seq = 0;
+  let lastDate = '';
+  let lastRoutes = '';
+  let pickMark = null;
+  let picking = false;
+  let hoverQuietUntil = 0;   // after the page scrolls itself, ignore the ticket that lands under the cursor
+
+  const PREFS = 'daytrippin.prefs.v2';
+  const savePrefs = () => {
+    try {
+      const { sort, maxDrive, buffer, homeBy, maxPrice, short, passengers } = state;
+      localStorage.setItem(PREFS, JSON.stringify({ sort, maxDrive, buffer, homeBy, maxPrice, short, passengers }));
+    } catch { /* private mode, or storage switched off: nothing to remember */ }
+  };
+  const loadPrefs = () => {
+    try { return JSON.parse(localStorage.getItem(PREFS) ?? 'null') ?? {}; } catch { return {}; }
+  };
+
+  // The colors: night blue unless she has switched to the turquoise day version.
+  const LOOK = 'daytrippin.look';
+  function setLook(look, remember) {
+    document.documentElement.dataset.look = look;
+    for (const b of $('look').children) b.setAttribute('aria-pressed', String(b.dataset.look === look));
+    if (remember) { try { localStorage.setItem(LOOK, look); } catch { /* nothing to remember it in */ } }
+  }
+  for (const b of $('look').children) b.addEventListener('click', () => setLook(b.dataset.look, true));
+  setLook(document.documentElement.dataset.look === 'day' ? 'day' : 'night', false);
+
+  // ------------------------------------------------------------------
+  // Sunrise and sunset, by SunCalc, read on the home clock.
+  // ------------------------------------------------------------------
+  const homeClock = () => new Intl.DateTimeFormat('en-US', { timeZone: homeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const sunCache = new Map();
+  function sunTimes(date, code) {
+    const place = AIRPORTS[code];
+    if (!window.SunCalc || !place) return null;
+    const key = `${date}|${code}`;
+    if (!sunCache.has(key)) {
+      const [y, m, d] = date.split('-').map(Number);
+      const t = window.SunCalc.getTimes(new Date(Date.UTC(y, m - 1, d, 17)), place[0], place[1]);
+      const mins = (when) => {
+        if (!(when instanceof Date) || Number.isNaN(when.getTime())) return null;
+        const parts = Object.fromEntries(homeClock().formatToParts(when).map((p) => [p.type, p.value]));
+        return Number(parts.hour) * 60 + Number(parts.minute);
+      };
+      const rise = mins(t.sunrise);
+      const set = mins(t.sunset);
+      sunCache.set(key, rise == null || set == null ? null : { rise, set });
+    }
+    return sunCache.get(key);
+  }
+  // The sky she is under: home's before takeoff and after landing, the destination's in between.
+  function skyFor(t) {
+    const home = sunTimes(state.date, config.home.airports[0]?.code);
+    if (!home) return null;
+    const there = sunTimes(state.date, t.code);
+    const air = t.strip.filter((s) => s.kind === 'air');
+    if (!there || air.length < 2) return { rise: home.rise, set: home.set, setThere: null };
+    return {
+      rise: home.rise < air[0].from ? home.rise : there.rise,
+      set: there.set < air[1].to ? there.set : home.set,
+      setThere: there.set - (t.tzShiftMin || 0),
+    };
+  }
+
+  // ------------------------------------------------------------------
+  // The map
+  // ------------------------------------------------------------------
+  const map = (() => {
+    const box = $('mapBox');
+    const svg = $('map');
+    const d3 = window.d3;
+    const topo = window.topojson;
+    let shapes = null;
+    try {
+      const data = JSON.parse($('mapdata').textContent);
+      if (d3?.geoPath && topo?.merge) {
+        shapes = {
+          land: topo.merge(data.states, data.states.objects.states.geometries),
+          borders: topo.mesh(data.states, data.states.objects.states, (a, b) => a !== b),
+          far: topo.feature(data.far, data.far.objects.far),
+          grat: d3.geoGraticule().step([5, 5])(),
+        };
+      }
+    } catch { /* no map data */ }
+    if (!shapes) { $('chart').hidden = true; return { show() {}, fly() {}, mark() {}, stop() {} }; }
+
+    const pGrat = svgEl('path', { class: 'm-grat' });
+    const pFar = svgEl('path', { class: 'm-far' });
+    const pLand = svgEl('path', { class: 'm-land' });
+    const pBorders = svgEl('path', { class: 'm-borders' });
+    const fadeStops = svgEl('linearGradient', { id: 'mapFadeRamp' });
+    const fadeRect = svgEl('rect', { fill: 'url(#mapFadeRamp)' });
+    const fadeMask = svgEl('mask', { id: 'mapFade', maskUnits: 'userSpaceOnUse' }, fadeRect);
+    const gBase = svgEl('g', { mask: 'url(#mapFade)' }, pGrat, pFar, pLand, pBorders);
+    const gRoutes = svgEl('g');
+    const gMarks = svgEl('g');
+    const gTags = svgEl('g');
+    const gPlanes = svgEl('g');
+    svg.append(svgEl('defs', {}, fadeStops, fadeMask), gBase, gRoutes, gMarks, gTags, gPlanes);
+    const beside = window.matchMedia('(min-width: 62rem)');
+
+    let model = { trips: [], hidden: [], airports: [], homeCode: null };
+    let routes = new Map();     // "MLB-ATL" -> { path, city }
+    let running = [];           // the entrance, while it plays
+    let flight = 0;             // the one plane a hover or tap sends out
+    let flightPlane = null;
+    let timer = 0;
+    let lastW = 0;
+    let lastH = 0;
+
+    const keyOf = (t) => `${t.from.code}-${t.code}`;
+    const lonLat = (code) => (AIRPORTS[code] ? [AIRPORTS[code][1], AIRPORTS[code][0]] : null);
+    const arcD = (a, b) => {
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const k = 0.17;
+      return `M${a[0].toFixed(1)},${a[1].toFixed(1)}Q${((a[0] + b[0]) / 2 - dy * k).toFixed(1)},${((a[1] + b[1]) / 2 + dx * k).toFixed(1)} ${b[0].toFixed(1)},${b[1].toFixed(1)}`;
+    };
+    const burst = (cx, cy, R, r, n) => {
+      const pts = [];
+      for (let i = 0; i < n * 2; i += 1) {
+        const rad = i % 2 ? r : R;
+        const a = (Math.PI * i) / n;
+        pts.push(`${(cx + Math.sin(a) * rad).toFixed(1)},${(cy - Math.cos(a) * rad).toFixed(1)}`);
+      }
+      return pts.join(' ');
+    };
+    const place = (plane, path, len, t, back) => {
+      const p = path.getPointAtLength(len * t);
+      const q = path.getPointAtLength(Math.min(len, len * t + 1.5));
+      const o = path.getPointAtLength(Math.max(0, len * t - 1.5));
+      const ang = (Math.atan2(q.y - o.y, q.x - o.x) * 180) / Math.PI + (back ? 180 : 0);
+      plane.setAttribute('transform', `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${ang.toFixed(1)})`);
+    };
+    // Everything is redrawn from scratch, so anything still moving is dropped.
+    const stop = () => {
+      for (const a of running) { try { a.pause(); } catch { /* already done */ } }
+      running = [];
+      flight += 1;
+      gPlanes.replaceChildren();
+    };
+
+    function draw(entrance) {
+      const w = box.clientWidth;
+      const h = box.clientHeight;
+      if (!w || !h) return;
+      clearTimeout(timer);
+      lastW = w;
+      lastH = h;
+      stop();
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      // Beside the list the map fades in from the left; stacked, from top and bottom.
+      const ramp = beside.matches ? [[0, '#000'], [0.1, '#fff'], [1, '#fff']] : [[0, '#000'], [0.08, '#fff'], [0.93, '#fff'], [1, '#000']];
+      for (const [k, v] of Object.entries(beside.matches ? { x1: 0, y1: 0, x2: 1, y2: 0 } : { x1: 0, y1: 0, x2: 0, y2: 1 })) fadeStops.setAttribute(k, v);
+      fadeStops.replaceChildren(...ramp.map(([offset, color]) => svgEl('stop', { offset, 'stop-color': color })));
+      for (const n of [fadeMask, fadeRect]) { n.setAttribute('x', 0); n.setAttribute('y', 0); n.setAttribute('width', w); n.setAttribute('height', h); }
+
+      // Frame: Florida and the Carolinas always, then whatever today's routes reach.
+      const pts = [[-80.3, 25.3], [-87.4, 30.4], [-75.6, 35.3]];
+      for (const code of [model.homeCode, ...model.airports]) { const p = lonLat(code); if (p) pts.push(p); }
+      for (const t of model.trips) { const p = lonLat(t.code); if (p) pts.push(p); }
+      for (const t of model.hidden) { const p = lonLat(t.code); if (p) pts.push(p); }
+      const padX = Math.max(30, Math.min(84, w * 0.12));
+      const padTop = Math.max(34, Math.min(72, h * 0.09));
+      const proj = d3.geoConicEqualArea().parallels([28, 42]).rotate([81, 0])
+        .fitExtent([[padX, padTop], [w - padX, h - 30]], { type: 'MultiPoint', coordinates: pts });
+      const path = d3.geoPath(proj);
+      pGrat.setAttribute('d', path(shapes.grat) ?? '');
+      pFar.setAttribute('d', path(shapes.far) ?? '');
+      pLand.setAttribute('d', path(shapes.land) ?? '');
+      pBorders.setAttribute('d', path(shapes.borders) ?? '');
+      const xy = (code) => { const p = lonLat(code); return p ? proj(p) : null; };
+
+      gRoutes.replaceChildren();
+      gMarks.replaceChildren();
+      gTags.replaceChildren();
+      routes = new Map();
+      const home = xy(model.homeCode);
+      const boxes = [];   // taken rectangles: [x, y, w, h]
+
+      // Routes that did not pass: dotted, hollow.
+      const hollow = new Set();
+      for (const t of model.hidden) {
+        const a = xy(t.fromCode);
+        const b = xy(t.code);
+        if (!a || !b) continue;
+        gRoutes.append(svgEl('path', { class: 'm-arc hid', d: arcD(a, b) }));
+        if (!hollow.has(t.code) && !model.trips.some((s) => s.code === t.code)) {
+          hollow.add(t.code);
+          const dot = svgEl('circle', { class: 'm-dot hid', cx: b[0].toFixed(1), cy: b[1].toFixed(1), r: 4 });
+          dot.append(svgEl('title', {}, `${t.city}: ${t.reasons.join(', ')}`));
+          gMarks.append(dot);
+          boxes.push([b[0] - 5, b[1] - 5, 10, 10]);
+        }
+      }
+
+      // The airports she would leave from.
+      for (const code of model.airports) {
+        const p = xy(code);
+        if (p) gMarks.append(svgEl('circle', { class: 'm-ap', cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 2.6 }));
+      }
+
+      // Routes that passed: one arc each, one dot per city sized by hours in town.
+      const cities = new Map();
+      model.trips.forEach((t) => {
+        const a = xy(t.from.code);
+        const b = xy(t.code);
+        if (!a || !b) return;
+        const arc = svgEl('path', { class: 'm-arc', d: arcD(a, b) });
+        gRoutes.append(arc);
+        const r = 4.5 + Math.min(6.5, (t.townMin / 60) * 0.62);
+        let city = cities.get(t.code);
+        if (!city) {
+          city = { t, b, r, dot: svgEl('circle', { class: 'm-dot', cx: b[0].toFixed(1), cy: b[1].toFixed(1), r: r.toFixed(1) }), tag: null, keys: [] };
+          cities.set(t.code, city);
+          boxes.push([b[0] - r - 2, b[1] - r - 2, r * 2 + 4, r * 2 + 4]);
+        } else if (r > city.r) {
+          city.r = r;
+          city.dot.setAttribute('r', r.toFixed(1));
+        }
+        city.keys.push(keyOf(t));
+        routes.set(keyOf(t), { path: arc, city });
+      });
+
+      // Home.
+      if (home) {
+        const label = svgEl('text', { class: 'm-home', x: (home[0] + 15).toFixed(1), y: (home[1] + 21).toFixed(1) }, config.home.name);
+        gMarks.append(label);
+        boxes.push([home[0] - 16, home[1] - 16, 32, 32], [home[0] + 13, home[1] + 7, label.getComputedTextLength() + 6, 20]);
+      }
+      for (const city of cities.values()) gMarks.append(city.dot);
+      if (home) gMarks.append(svgEl('polygon', { class: 'm-sun', points: burst(home[0], home[1], 14, 8.2, 12) }));
+
+      // Luggage-tag labels, each placed where it collides with nothing.
+      const hit = (r) => boxes.some((o) => r[0] < o[0] + o[2] && r[0] + r[2] > o[0] && r[1] < o[1] + o[3] && r[1] + r[3] > o[1]);
+      for (const city of cities.values()) {
+        const { t, b, r } = city;
+        const text = svgEl('text', { x: 9, y: 16.5 }, `${t.city} `, svgEl('tspan', { class: 'hrs' }, t.town));
+        const rect = svgEl('rect', { x: 0, y: 0, height: 24, rx: 7 });
+        const tag = svgEl('g', { class: 'm-tag' }, rect, text);
+        gTags.append(tag);
+        const tw = text.getComputedTextLength() + 18;
+        rect.setAttribute('width', tw.toFixed(1));
+        const gap = r + 5;
+        const east = [[b[0] + gap, b[1] - 12], [b[0] + gap * 0.4, b[1] - gap - 24], [b[0] + gap * 0.4, b[1] + gap]];
+        const west = [[b[0] - gap - tw, b[1] - 12], [b[0] - gap * 0.4 - tw, b[1] - gap - 24], [b[0] - gap * 0.4 - tw, b[1] + gap]];
+        const mid = [[b[0] - tw / 2, b[1] - gap - 24], [b[0] - tw / 2, b[1] + gap]];
+        const tries = home && b[0] < home[0] - 12 ? [...west, ...mid, ...east] : [...east, ...mid, ...west];
+        const spot = tries.find(([x, y]) => x >= 5 && y >= 5 && x + tw <= w - 5 && y + 24 <= h - 5 && !hit([x, y, tw, 24]));
+        if (!spot) { tag.remove(); continue; }
+        tag.setAttribute('transform', `translate(${spot[0].toFixed(1)},${spot[1].toFixed(1)})`);
+        boxes.push([spot[0], spot[1], tw, 24]);
+        city.tag = tag;
+        const go = () => focusTicket(city.keys[0]);
+        tag.addEventListener('click', go);
+        city.dot.addEventListener('click', go);
+      }
+
+      if (entrance && moving()) play();
+    }
+
+    // The one orchestrated moment: routes draw out from home, a plane rides each one,
+    // and the city lights up when it lands.
+    function play() {
+      const shown = [...routes.values()];
+      const seen = new Set();
+      shown.forEach(({ path, city }, i) => {
+        const delay = 160 + i * 150;
+        const len = path.getTotalLength();
+        const duration = Math.max(650, Math.min(1300, len * 3.4));
+        running.push(A.animate(A.svg.createDrawable(path), { draw: ['0 0', '0 1'], duration, delay, ease: 'inOutQuad' }));
+        const plane = svgEl('path', { class: 'm-plane', d: PLANE });
+        place(plane, path, len, 0, false);
+        plane.style.opacity = '0';
+        gPlanes.append(plane);
+        const o = { t: 0 };
+        running.push(A.animate(o, {
+          t: 1, duration, delay, ease: 'inOutQuad',
+          onBegin: () => { plane.style.opacity = '1'; },
+          onUpdate: () => place(plane, path, len, o.t, false),
+          onComplete: () => plane.remove(),
+        }));
+        if (seen.has(city)) return;
+        seen.add(city);
+        const r = Number(city.dot.getAttribute('r'));
+        city.dot.setAttribute('r', 0);
+        running.push(A.animate(city.dot, { r: [0, r], duration: 520, delay: delay + duration - 120, ease: 'outBack(2.2)' }));
+        if (city.tag) {
+          city.tag.style.opacity = '0';
+          running.push(A.animate(city.tag, { opacity: [0, 1], duration: 300, delay: delay + duration, ease: 'outQuad' }));
+        }
+      });
+    }
+
+    // Out and back along one route: the whole day in two seconds.
+    function fly(key) {
+      const route = routes.get(key);
+      mark(key);
+      if (!route || !moving()) return;
+      const mine = ++flight;
+      flightPlane?.remove();
+      const { path } = route;
+      const len = path.getTotalLength();
+      const plane = svgEl('path', { class: 'm-plane', d: PLANE });
+      flightPlane = plane;
+      gPlanes.append(plane);
+      const o = { t: 0 };
+      place(plane, path, len, 0, false);
+      const leg = (to, back, delay, then) => A.animate(o, {
+        t: to, duration: 900, delay, ease: 'inOutSine',
+        onUpdate: () => { if (mine === flight) place(plane, path, len, o.t, back); },
+        onComplete: () => { if (mine === flight) then(); },
+      });
+      leg(1, false, 0, () => leg(0, true, 320, () => plane.remove()));
+    }
+
+    function mark(key) {
+      for (const [k, { path, city }] of routes) {
+        const on = k === key;
+        path.classList.toggle('hot', on);
+        if (on) path.parentNode.append(path);
+        if (on || !city.keys.includes(key)) {
+          city.dot.classList.toggle('hot', on);
+          city.tag?.classList.toggle('hot', on);
+        }
+      }
+    }
+
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(() => {
+        if (box.clientWidth === lastW && box.clientHeight === lastH) return;
+        clearTimeout(timer);
+        timer = setTimeout(() => draw(false), 120);
+      }).observe(box);
+    }
+
+    return {
+      show(next, entrance) { model = next; draw(entrance); },
+      fly, mark, stop,
+    };
+  })();
+
+  // ------------------------------------------------------------------
+  // Tickets
+  // ------------------------------------------------------------------
+  const tickLabel = (min) => {
+    const m = ((min % 1440) + 1440) % 1440;
+    if (m === 0) return 'Midnight';
+    if (m === 720) return 'Noon';
+    const h = m / 60;
+    return `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'AM' : 'PM'}`;
+  };
+  const keyOf = (t) => `${t.from.code}-${t.code}`;
+
+  // A bargain is a round trip under DEFAULTS.cheapUnder dollars (config.mjs).
+  const isCheap = (t) => Number.isFinite(config.defaults.cheapUnder) && t.price < config.defaults.cheapUnder;
+
+  function card(t, lo, hi, stripW) {
+    const span = hi - lo;
+    const pct = (m) => `${(((m - lo) / span) * 100).toFixed(2)}%`;
+    const shift = t.tzShiftMin || 0;
+    const town = t.strip.find((s) => s.kind === 'town');
+    const sky = skyFor(t);
+
+    // The day strip: a band of night and daylight over the hours of the trip.
+    const segs = el('div', { class: 'segs' }, t.strip.map((s) => {
+      const i = el('i', { class: s.kind });
+      i.style.left = pct(s.from);
+      i.style.width = `${(((s.to - s.from) / span) * 100).toFixed(2)}%`;
+      return i;
+    }));
+    let band = null;
+    let skyWords = '';
+    if (sky) {
+      band = el('div', { class: 'band' });
+      band.style.background = `linear-gradient(90deg, var(--night) ${pct(sky.rise - 50)}, var(--dawn) ${pct(sky.rise - 8)}, var(--day) ${pct(sky.rise + 40)}, var(--day) ${pct(sky.set - 40)}, var(--dawn) ${pct(sky.set + 8)}, var(--night) ${pct(sky.set + 50)})`;
+      skyWords = ` Sunrise ${fmtClock(sky.rise)}, sunset ${fmtClock(sky.set)}, on the home clock.`;
+    }
+    const strip = el('div', {
+      class: band ? 'strip' : 'strip plain', role: 'img',
+      'aria-label': `Leave home ${t.leaveHome}, ${t.town} in town, home about ${t.door}.${skyWords}`,
+    }, band, segs);
+
+    // Both ends are always named. Between them, a label every three hours, or every
+    // six when the strip is too narrow for that, skipping any that would touch an end.
+    const wide = (m) => tickLabel(m).length * 6.6;
+    const x = (m) => ((m - lo) / span) * stripW;
+    const step = [180, 360, 720].find((s) => (stripW * s) / span >= 42);
+    const marks = [lo];
+    for (let m = Math.ceil((lo + 1) / step) * step; step && m < hi; m += step) {
+      if (x(m) - wide(m) / 2 > wide(lo) + 8 && x(m) + wide(m) / 2 < stripW - wide(hi) - 8) marks.push(m);
+    }
+    marks.push(hi);
+    const ticks = el('div', { class: 'ticks', 'aria-hidden': 'true' }, marks.map((m) => {
+      const s = el('span', { class: m === lo ? 'first' : m === hi ? 'last' : null, text: tickLabel(m) });
+      s.style.left = pct(m);
+      return s;
+    }));
+
+    const row = (at, words, cls) => el('li', { class: cls }, el('span', { class: 'at', text: at }), el('span', {}, words));
+    const legs = [
+      row(t.leaveHome, `Leave home. Drive ${t.from.drive} to the ${t.from.city} airport.`),
+      row(t.depart, `${t.airlineOut ?? 'Flight'} to ${t.city}, lands ${t.landThere}.`),
+    ];
+    if (town) {
+      legs.push(row(fmtClock(town.from - shift), [
+        `In town until ${fmtClock(town.to - shift)}.`,
+        sky?.setThere != null ? el('small', { text: `The sun sets there at ${fmtClock(sky.setThere)}.` }) : null,
+      ], 'town-row'));
+    }
+    legs.push(
+      row(t.leaveThere, `${t.airlineBack ?? 'Flight'} home, lands ${t.landHome}.`),
+      row(t.door, `Home again, give or take${t.doorNextDay ? ', after midnight' : ''}. ${t.away} door to door.`),
+    );
+
+    let aside = null;
+    if (shift) {
+      const hours = Math.abs(shift) / 60;
+      aside = el('p', { class: 'aside', text: `${t.city} runs ${hours} ${hours === 1 ? 'hour' : 'hours'} ${shift > 0 ? 'behind' : 'ahead of'} home. Times there are local.` });
+    }
+
+    const sizeClass = t.size === 'Full day' ? 'size full' : t.size === 'Lunch run' ? 'size lunch' : 'size';
+    const plane = svgEl('svg', { viewBox: '-11 -9 22 18', 'aria-hidden': 'true' }, svgEl('path', { d: PLANE }));
+    const key = keyOf(t);
+
+    const li = el('li', { class: 'ticket', 'data-key': key },
+      el('div', { class: 't-in' },
+        el('div', { class: 't-head' },
+          el('div', { class: 't-route' },
+            el('span', { class: 'codes', 'aria-hidden': 'true' }, t.from.code, plane, t.code),
+            el('span', { class: 'pills' },
+              isCheap(t) ? el('span', { class: 'deal', text: 'Super cheap' }) : null,
+              el('span', { class: sizeClass, text: t.size }))),
+          el('h2', { class: 't-city' }, el('span', { text: t.city })),
+          el('p', { class: 't-via', text: `Flying from ${t.from.city}, a ${t.from.drive} drive` }),
+          el('div', { class: 'figs' },
+            el('p', { class: 'fig' }, el('b', { text: `$${t.price}` }), el('span', { text: state.passengers === 2 ? 'for 2 people, both flights' : 'round trip, both flights' })),
+            el('p', { class: 'fig hours' }, el('b', { text: t.town }), el('span', { text: 'in town, estimated' }))),
+          t.perHour == null ? null : el('p', { class: 'rate', text: `$${t.perHour} per hour in town` })),
+        el('div', { class: 't-body' },
+          strip, ticks,
+          el('ol', { class: 'legs' }, legs),
+          aside,
+          el('div', { class: 't-foot' },
+            el('a', { class: 'go', href: t.link, target: '_blank', rel: 'sponsored noopener', text: 'See these flights' }),
+            el('a', { class: 'fill', href: t.townLink, target: '_blank', rel: 'sponsored noopener', text: `${t.town} free in ${t.city}` })))));
+
+    li.addEventListener('pointerenter', () => { if (!picking && performance.now() > hoverQuietUntil) map.fly(key); });
+    li.addEventListener('focusin', () => { if (!picking) map.mark(key); });
+    return li;
+  }
+
+  function clearPick() {
+    try { pickMark?.remove(); } catch { /* gone with its ticket */ }
+    pickMark = null;
+  }
+
+  function showTrips(trips, how) {
+    const box = $('trips');
+    const before = new Map([...box.children].map((li) => [li.dataset.key, li.getBoundingClientRect().top]));
+    clearPick();
+    if (!trips.length) { box.replaceChildren(); return; }
+    const edges = trips.flatMap((t) => t.strip.flatMap((s) => [s.from, s.to]));
+    const lo = Math.floor(Math.min(...edges) / 60) * 60;
+    const hi = Math.ceil(Math.max(...edges) / 60) * 60;
+    // Roughly how wide a day strip will be, to decide how many hour labels fit.
+    const cw = box.clientWidth || 340;
+    const stripW = Math.max(180, cw >= 592 ? cw - 291 : cw - 40);
+    const cards = trips.map((t) => card(t, lo, hi, stripW));
+    box.replaceChildren(...cards);
+    if (!moving()) return;
+    if (how === 'deal') {
+      // A new day: the tickets are dealt onto the table.
+      A.animate(cards, {
+        opacity: [0, 1], translateY: [26, 0], rotate: [(_, i) => (i % 2 ? 1.6 : -1.6), 0],
+        duration: 560, delay: A.stagger(85, { start: 120 }), ease: 'outBack(1.3)',
+      });
+    } else {
+      // Same day, new order or new rules: each ticket slides to its new place.
+      for (const li of cards) {
+        const was = before.get(li.dataset.key);
+        if (was == null) A.animate(li, { opacity: [0, 1], duration: 320, ease: 'outQuad' });
+        else {
+          const dy = was - li.getBoundingClientRect().top;
+          if (Math.abs(dy) > 2) A.animate(li, { translateY: [dy, 0], duration: 460, ease: 'outQuart' });
+        }
+      }
+    }
+  }
+
+  function focusTicket(key) {
+    const li = [...$('trips').children].find((n) => n.dataset.key === key);
+    if (!li) return;
+    hoverQuietUntil = performance.now() + 2500;
+    li.scrollIntoView({ behavior: still.matches ? 'auto' : 'smooth', block: 'center' });
+    map.fly(key);
+    li.classList.add('is-rolling');
+    setTimeout(() => li.classList.remove('is-rolling'), 420);
+  }
+
+  // ------------------------------------------------------------------
+  // Pick one for me
+  // ------------------------------------------------------------------
+  let cannon = null;
+  function confettiAt(node) {
+    if (still.matches || !window.confetti) return;
+    try {
+      cannon ??= window.confetti.create($('confetti'), { resize: true, useWorker: false, disableForReducedMotion: true });
+      const r = node.getBoundingClientRect();
+      cannon({
+        particleCount: 110, spread: 80, startVelocity: 36, scalar: 0.95, ticks: 170,
+        origin: { x: (r.left + r.width / 2) / window.innerWidth, y: Math.max(0.05, (r.top + 30) / window.innerHeight) },
+        colors: ['#d92f4b', '#ffc93c', '#fffdf8', '#0e2a4d', '#ff9a55'],
+      });
+    } catch { /* confetti is a bonus */ }
+  }
+
+  async function pickOne() {
+    const items = [...$('trips').children];
+    if (picking || items.length < 2) return;
+    picking = true;
+    clearPick();
+    for (const li of items) li.classList.remove('is-pick');
+    const target = Math.floor(Math.random() * items.length);
+    const lit = (i) => {
+      items.forEach((li, j) => li.classList.toggle('is-rolling', j === i));
+      map.mark(i == null ? null : items[i].dataset.key);
+    };
+    if (moving()) {
+      const steps = items.length * 2 + target;
+      for (let s = 0; s <= steps; s += 1) {
+        lit(s % items.length);
+        await sleep(70 + (s / steps) ** 2 * 230);
+      }
+    }
+    lit(null);
+    const li = items[target];
+    if (!li.isConnected) { picking = false; return; }
+    li.classList.add('is-pick');
+    hoverQuietUntil = performance.now() + 3500;
+    li.scrollIntoView({ behavior: still.matches ? 'auto' : 'smooth', block: 'center' });
+    const city = li.querySelector('.t-city span');
+    $('announce').textContent = `Picked for you: ${city.textContent}.`;
+    await sleep(still.matches ? 0 : 420);
+    if (li.isConnected) {
+      if (window.RoughNotation) {
+        try {
+          pickMark = window.RoughNotation.annotate(city, {
+            type: 'circle', color: getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#0e2a4d',
+            strokeWidth: 2.5, padding: [6, 12], iterations: 2, animate: !still.matches, animationDuration: 650,
+          });
+          pickMark.show();
+        } catch { /* the circle is a bonus */ }
+      }
+      confettiAt(li);
+      map.fly(li.dataset.key);
+    }
+    picking = false;
+  }
+
+  // ------------------------------------------------------------------
+  // Controls
+  // ------------------------------------------------------------------
+  function setQuestion() {
+    $('question').textContent = `Where could you fly ${state.phrase} and still sleep in your own bed?`;
+  }
+
+  function buildDays() {
+    const today = new Date();
+    const tomorrow = addDays(today, 1);
+    const picks = [{ date: tomorrow, label: 'Tomorrow', phrase: 'tomorrow' }];
+    for (let d = addDays(tomorrow, 1); picks.length < 3; d = addDays(d, 1)) {
+      if (d.getDay() === 6 || d.getDay() === 0) picks.push({ date: d, label: weekday.format(d), phrase: `on ${weekday.format(d)}` });
+    }
+    const box = $('days');
+    const other = $('otherDay');
+    other.min = iso(today);
+    const press = (value) => {
+      for (const b of box.querySelectorAll('.day')) b.setAttribute('aria-pressed', String(b.dataset.date === value));
+      other.classList.toggle('on', Boolean(other.value) && other.value === value);
+    };
+    for (const p of picks) {
+      box.append(el('button', {
+        class: 'day', type: 'button', 'data-date': iso(p.date), 'aria-pressed': 'false',
+        'aria-label': `${p.label}, ${longDate.format(p.date)}`,
+        onclick: () => { other.value = ''; choose(iso(p.date), p.phrase); press(iso(p.date)); },
+      },
+      el('span', { class: 'mon', text: monthShort.format(p.date) }),
+      el('span', { class: 'num', text: String(p.date.getDate()) }),
+      el('span', { class: 'lab', text: p.label })));
+    }
+    other.addEventListener('change', () => {
+      if (!other.value) return;
+      const [y, m, d] = other.value.split('-').map(Number);
+      choose(other.value, `on ${shortDate.format(new Date(y, m - 1, d))}`);
+      press(other.value);
+    });
+    choose(iso(tomorrow), 'tomorrow');
+    press(iso(tomorrow));
+  }
+
+  function choose(date, phrase) {
+    state.date = date;
+    state.phrase = phrase;
+    setQuestion();
+    run();
+  }
+
+  const radio = (name, value, label, checked, onpick) => el('label', {},
+    el('input', { type: 'radio', name, id: `${name}-${String(value).replace(/\W/g, '') || 'any'}`, value, checked, onchange: onpick }),
+    el('span', { text: label }));
+
+  function buildOptions() {
+    const airports = [...config.home.airports].sort((a, b) => a.driveMin - b.driveMin);
+    const fits = airports.filter((a) => a.driveMin <= config.defaults.maxDriveMin);
+    state.maxDrive = (fits.at(-1) ?? airports[0]).driveMin;
+    state.buffer = config.defaults.bufferMin;
+
+    // Her switches from last time, where they still make sense.
+    const saved = loadPrefs();
+    if (airports.some((a) => a.driveMin === saved.maxDrive)) state.maxDrive = saved.maxDrive;
+    if ([60, 90, 120].includes(saved.buffer)) state.buffer = saved.buffer;
+    if (['', '21:00', '22:00', '23:00', '24:00'].includes(saved.homeBy)) state.homeBy = saved.homeBy;
+    if (['price', 'town', 'value'].includes(saved.sort)) state.sort = saved.sort;
+    if (typeof saved.maxPrice === 'string' && /^\d*$/.test(saved.maxPrice)) state.maxPrice = saved.maxPrice;
+    if (saved.passengers === 1 || saved.passengers === 2) state.passengers = saved.passengers;
+    state.short = saved.short === true;
+
+    const farthest = airports.at(-1);
+    const usualDrive = (fits.at(-1) ?? airports[0]).driveMin;
+    const sync = () => {
+      const drive = $(`drive-${state.maxDrive}`);
+      if (drive) drive.checked = true;
+      for (const b of $('sort').children) b.setAttribute('aria-pressed', String(b.dataset.sort === state.sort));
+      $('hunt').setAttribute('aria-pressed', String(state.maxDrive === farthest.driveMin));
+      for (const b of $('who').children) b.setAttribute('aria-pressed', String(Number(b.dataset.passengers) === state.passengers));
+    };
+    const set = (patch) => { Object.assign(state, patch); sync(); savePrefs(); run(); };
+
+    // Bargain hunt: one tap widens the search to the farthest airport and puts the
+    // cheapest first. The big airports are where the rock-bottom fares are.
+    if (farthest.driveMin > usualDrive) {
+      $('huntLabel').textContent = `Bargain hunt: search as far as ${farthest.city}`;
+      $('hunt').hidden = false;
+      $('hunt').addEventListener('click', () => set(state.maxDrive === farthest.driveMin
+        ? { maxDrive: usualDrive }
+        : { maxDrive: farthest.driveMin, sort: 'price' }));
+    }
+
+    airports.forEach((a, i) => {
+      const text = i === 0 ? `${a.city} only` : `As far as ${a.city}, ${dur(a.driveMin)} away`;
+      $('drive').append(radio('drive', a.driveMin, text, a.driveMin === state.maxDrive, () => set({ maxDrive: a.driveMin })));
+    });
+    for (const min of [60, 90, 120]) {
+      $('buffer').append(radio('buffer', min, dur(min), min === state.buffer, () => set({ buffer: min })));
+    }
+    for (const [value, label] of [['', 'Any time'], ['21:00', '9 PM'], ['22:00', '10 PM'], ['23:00', '11 PM'], ['24:00', 'Midnight']]) {
+      $('homeBy').append(radio('homeBy', value, label, value === state.homeBy, () => set({ homeBy: value })));
+    }
+    $('maxPrice').value = state.maxPrice;
+    $('maxPrice').addEventListener('change', (e) => set({ maxPrice: e.target.value.trim() }));
+    $('short').checked = state.short;
+    $('short').addEventListener('change', (e) => set({ short: e.target.checked }));
+
+    for (const [value, label] of [['price', 'Cheapest'], ['town', 'Most time in town'], ['value', 'Best value']]) {
+      $('sort').append(el('button', {
+        type: 'button', 'data-sort': value, 'aria-pressed': String(value === state.sort), text: label,
+        onclick: () => set({ sort: value }),
+      }));
+    }
+    $('who').replaceChildren(...[1, 2].map((n) => el('button', {
+      type: 'button', 'data-passengers': n, 'aria-pressed': String(state.passengers === n),
+      text: n === 1 ? '1 passenger' : '2 passengers',
+      onclick: () => set({ passengers: n }),
+    })));
+    sync();
+    $('pick').addEventListener('click', pickOne);
+  }
+
+  // ------------------------------------------------------------------
+  // Search and render
+  // ------------------------------------------------------------------
+  const searched = () => config.home.airports.filter((a) => a.driveMin <= state.maxDrive);
+
+  function say(text, problem = false) {
+    $('status').textContent = text;
+    $('status').classList.toggle('problem', problem);
+  }
+
+  async function run() {
+    if (!config || !state.date) return;
+    const ticket = ++seq;
+    const names = list(searched().map((a) => a.city));
+    // Only say "checking" when the answer is not instant.
+    const slow = setTimeout(() => {
+      if (ticket !== seq) return;
+      say(`Checking flights from ${names}…`);
+      $('results').setAttribute('aria-busy', 'true');
+    }, 140);
+    try {
+      const data = await source.search({ ...state });
+      if (ticket !== seq) return;
+      render(data);
+    } catch (err) {
+      if (ticket !== seq) return;
+      $('trips').replaceChildren();
+      $('bar').hidden = true;
+      $('hiddenBox').hidden = true;
+      map.show({ trips: [], hidden: [], airports: searched().map((a) => a.code), homeCode: config.home.airports[0]?.code }, false);
+      say(`${err.message} Try again in a moment.`, true);
+    } finally {
+      clearTimeout(slow);
+      if (ticket === seq) $('results').setAttribute('aria-busy', 'false');
+    }
+  }
+
+  function render(data) {
+    const sample = data.mode === 'sample';
+    $('sample').hidden = !sample;
+    if (sample) {
+      $('sample').replaceChildren(el('b', { text: 'Sample data. ' }), standalone
+        ? 'These fares and times are made up so you can try the page.'
+        : 'These fares and times are made up so you can try the page. Start the server with a SerpApi key to see real flights.');
+    }
+
+    const trips = data.trips;
+    const from = list(data.airports);
+    $('bar').hidden = trips.length === 0;
+    $('pick').hidden = trips.length < 2;
+    $('dayKey').hidden = !window.SunCalc;
+    if (trips.length) {
+      const cheap = trips.filter(isCheap).length;
+      const bargains = cheap ? ` ${cheap} ${cheap === 1 ? 'is' : 'are'} super cheap, meaning under $${config.defaults.cheapUnder} for both flights.` : '';
+      say(`${trips.length} ${trips.length === 1 ? 'day trip' : 'day trips'} from ${from}.${bargains}${data.partial ? ' The search stopped early to protect the API allowance, so this list may be incomplete.' : ''}`);
+    } else {
+      say(`No day trip from ${from} passes the test for this day. Try a longer drive, a shorter airport wait, or showing short trips.`, true);
+    }
+
+    const newDay = data.date !== lastDate;
+    lastDate = data.date;
+    showTrips(trips, newDay ? 'deal' : 'shift');
+
+    $('hiddenBox').hidden = data.hidden.length === 0;
+    $('hiddenSummary').textContent = `${data.hidden.length} ${data.hidden.length === 1 ? 'trip' : 'trips'} hidden, and why`;
+    $('hiddenList').replaceChildren(...data.hidden.map((h) => el('li', { text: `${h.city} from ${h.from}: ${h.reasons.join(', ')}.` })));
+
+    const a = data.assumptions;
+    const paid = config.affiliate && (config.affiliate.flights || config.affiliate.town)
+      ? ' Flight and in-town links are tracked. A booking through them can pay this site. The fare is not marked up.'
+      : ' Flight and in-town links go to the booking sites. They are not tracked yet, so a booking pays nothing until the affiliate ids are set. The fare is not marked up.';
+    $('fine').textContent = `Time in town is an estimate. It allows ${a.exitMin} minutes to leave the airport, ${a.rideMin} minutes each way into town, and ${dur(a.bufferMin)} at the airport before flying home. Prices cover both flights. Bag fees are extra.${paid}${standalone ? ' This copy runs on sample data. For real flights, run the Daytrippin’ server with a SerpApi key.' : ''}`;
+
+    // The server lists hidden trips by city name; find them a place on the map.
+    const homeCodes = config.home.airports;
+    const hidden = data.hidden.map((h) => ({
+      ...h,
+      code: h.code ?? codeForCity(h.city),
+      fromCode: h.fromCode ?? homeCodes.find((ap) => ap.city === h.from)?.code,
+    }));
+    const routesNow = `${data.date}|${trips.map(keyOf).sort().join()}`;
+    map.show({ trips, hidden, airports: searched().map((ap) => ap.code), homeCode: homeCodes[0]?.code }, routesNow !== lastRoutes);
+    lastRoutes = routesNow;
+    $('mapNote').textContent = hidden.some((h) => h.code && h.fromCode)
+      ? 'Bigger dot, more hours in town. Dotted routes didn’t pass the test.'
+      : 'Bigger dot, more hours in town.';
+  }
+
+  // ------------------------------------------------------------------
+  // Start
+  // ------------------------------------------------------------------
+  function hello() {
+    // The masthead does a small wave on arrival. It starts and ends at rest.
+    if (!moving() || !A.splitText) return;
+    try {
+      const { chars } = A.splitText($('mark'), { chars: true });
+      A.animate(chars, { translateY: [0, -9, 0], rotate: [0, -8, 0], duration: 620, delay: A.stagger(42, { start: 250 }), ease: 'inOutSine' });
+    } catch { /* the wave is a bonus */ }
+  }
+
+  function miles(a, b) {
+    const r = Math.PI / 180;
+    const dLat = (b[0] - a[0]) * r;
+    const dLon = (b[1] - a[1]) * r;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLon / 2) ** 2;
+    return 3958.8 * 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  function homeFromPoint(lat, lon, label) {
+    const here = [lat, lon];
+    const airports = Object.entries(AIRPORTS).map(([code, row]) => {
+      const driveMin = Math.min(240, Math.max(8, Math.round(miles(here, row) * 1.35)));
+      return { code, city: row[2], driveMin };
+    }).sort((a, b) => a.driveMin - b.driveMin).slice(0, 5);
+    config.home = { name: label, airports };
+    state.place = label;
+    state.ports = airports.map((a) => `${a.code}:${a.driveMin}:${encodeURIComponent(a.city)}`).join(',');
+    state.maxDrive = airports.at(-1).driveMin;
+    $('spotName').textContent = label;
+    $('map').setAttribute('aria-label', `Map of the day's routes from ${label}`);
+  }
+  async function detectFromConnection() {
+    const res = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    const lat = Number(data.latitude);
+    const lon = Number(data.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('no point');
+    if (data.timezone) homeZone = data.timezone;
+    const label = [data.city, data.region].filter(Boolean).join(', ') || data.country || (config.home?.name || 'Vero Beach');
+    homeFromPoint(lat, lon, label);
+  }
+  function useThisPhone() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      homeFromPoint(pos.coords.latitude, pos.coords.longitude, $('spotName').textContent);
+      buildOptions();
+      run();
+    }, () => {}, { timeout: 8000, maximumAge: 60000 });
+  }
+  $('home').addEventListener('click', useThisPhone);
+
+  async function boot() {
+    try {
+      if (window.location.protocol === 'file:') throw new Error('opened from a folder');
+      config = await server.config();
+    } catch {
+      source = { search: async (q) => demo.search(q) };
+      config = demo.config();
+      standalone = true;
+    }
+    try { await detectFromConnection(); }
+    catch { $('spotName').textContent = config.home?.name || 'Vero Beach'; }
+    buildOptions();
+    if (document.fonts?.ready) await Promise.race([document.fonts.ready, sleep(700)]);
+    buildDays();
+    hello();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
